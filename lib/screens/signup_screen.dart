@@ -1,8 +1,21 @@
 import 'package:attendance_tracker_frontend/screens/login_screen.dart';
 import 'package:flutter/material.dart';
 
-class SignupScreen extends StatelessWidget {
+class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
+
+  @override
+  State<SignupScreen> createState() => _SignupScreenState();
+}
+
+class _SignupScreenState extends State<SignupScreen> {
+  bool passwordVisible = false;
+
+  @override
+  void initState() {
+    super.initState();
+    passwordVisible = true;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,22 +50,7 @@ class SignupScreen extends StatelessWidget {
                     ),
                   ),
                   SizedBox(height: 30),
-                  Text(
-                    "Phone ",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
 
-                  TextField(
-                    // controller: _passwordController,
-                    obscureText: true,
-                    style: TextStyle(height: 2.5),
-                    decoration: InputDecoration(
-                      //  border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.call, size: 19.0),
-                      hintText: 'Enter your Phone ',
-                    ),
-                  ),
-                  SizedBox(height: 30),
                   Text(
                     "Email",
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -74,14 +72,43 @@ class SignupScreen extends StatelessWidget {
 
                   TextField(
                     // controller: _passwordController,
-                    obscureText: true,
+                    obscureText: passwordVisible,
                     style: TextStyle(height: 2.5),
                     decoration: InputDecoration(
                       //  border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.key_rounded, size: 19.0),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          passwordVisible
+                              ? Icons.visibility
+                              : Icons.visibility_off,
+                        ),
+                        onPressed: () {
+                          setState(
+                            () {
+                              passwordVisible = !passwordVisible;
+                            },
+                          );
+                        },
+                      ),
                       hintText: 'Enter your Password',
                     ),
                   ),
+                  SizedBox(height: 30),
+                  Text(
+                    "Confirm Password",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  TextField(
+                    // controller: _emailController,
+                    style: TextStyle(height: 2.5),
+                    decoration: InputDecoration(
+                      //  border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.key_rounded, size: 19.0),
+                      hintText: 'Confirm your Password',
+                    ),
+                  ),
+
                   SizedBox(height: 30),
 
                   SizedBox(height: 30),

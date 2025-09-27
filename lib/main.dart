@@ -1,3 +1,4 @@
+import 'package:attendance_tracker_frontend/screens/home_screen.dart';
 import 'package:attendance_tracker_frontend/screens/login_screen.dart';
 import 'package:flutter/material.dart';
 
@@ -32,7 +33,7 @@ class MyApp extends StatelessWidget {
         // tested with just a hot reload.
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: LoginScreen(),
+      home: HomeScreen(),
     );
   }
 }

@@ -4,6 +4,7 @@ import 'package:attendance_tracker_frontend/constants.dart';
 import 'package:attendance_tracker_frontend/screens/signup_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -124,6 +125,13 @@ class _LoginScreenState extends State<LoginScreen> {
       headers: {"content-type": "application/json"},
     );
     print(res.body);
+
+    if (res.statusCode == 200) {
+      final parsedBody = jsonDecode(res.body);
+
+      final prefs = await SharedPreferences.getInstance();
+      prefs.setString('jwt_token', parsedBody['data']['token']);
+    }
   }
 }
 
