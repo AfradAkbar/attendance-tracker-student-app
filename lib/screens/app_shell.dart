@@ -1,4 +1,5 @@
 import 'package:animated_bottom_navigation_bar/animated_bottom_navigation_bar.dart';
+import 'package:attendance_tracker_frontend/screens/profile_view.dart';
 import 'package:attendance_tracker_frontend/screens/timetable_view.dart';
 import 'package:flutter/material.dart';
 import 'package:attendance_tracker_frontend/screens/home_view.dart';
@@ -34,7 +35,7 @@ class _AppShellState extends State<AppShell> {
     const HomeView(),
     const TimetableView(),
     const HomeView(),
-    const TimetableView(),
+    const ProfileView(),
   ];
 
   @override
