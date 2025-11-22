@@ -1,6 +1,7 @@
 import 'package:attendance_tracker_frontend/screens/app_shell.dart';
 import 'package:attendance_tracker_frontend/screens/login_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 void main() {
   runApp(const MyApp());
@@ -15,6 +16,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
+        textTheme: GoogleFonts.urbanistTextTheme(),
         fontFamily: "Schyler",
         // This is the theme of your application.
         //

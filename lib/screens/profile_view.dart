@@ -6,90 +6,164 @@ class ProfileView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Card(
-          child: ListTile(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) {
-                    return ProfileDetailsScreen();
-                  },
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        iconTheme: const IconThemeData(color: Colors.white),
+        backgroundColor: Colors.transparent,
+        actions: [],
+      ),
+
+      body: Padding(
+        padding: const EdgeInsets.only(top: 100),
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Container(
+              width: double.infinity,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(30),
+                  topRight: Radius.circular(30),
                 ),
-              );
-            },
-            leading: Container(
-              width: 70,
-              height: 80,
-              color: Colors.green,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 60),
+
+                    _field(label: "Full Name", value: "AFRAD AKBAR"),
+                    _field(
+                      label: "Department",
+                      value: "Department of Computer Science",
+                    ),
+                    _field(label: "Course", value: "BCA"),
+                    _field(label: "Batch", value: "BCA - 2023-26"),
+                    _field(label: "Register No", value: "MO23BCAR19"),
+
+                    const SizedBox(height: 20),
+
+                    _sectionTitle("Admission Details"),
+                    _field(label: "Admission No", value: "ADM2023BCA019"),
+                    _field(label: "Admission Date", value: "01-06-2023"),
+
+                    const SizedBox(height: 20),
+
+                    _sectionTitle("Guardian Details"),
+                    _field(label: "Guardian Name", value: "Akbar"),
+                    _field(label: "Phone", value: "9876543210"),
+
+                    const SizedBox(height: 30),
+                  ],
+                ),
+              ),
             ),
-            title: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('AFRAD AKBAR'),
-                Text('Department of Computer Science'),
-                Text('BCA-2023-26'),
-                Text('MO23BCAR19'),
-              ],
+
+            const Positioned(
+              left: 0,
+              right: 0,
+              top: -40,
+              child: Center(child: _ProfileImage()),
             ),
-            trailing: Icon(Icons.chevron_right),
-          ),
+          ],
         ),
-        SizedBox(
-          height: 15,
-        ),
-        Card(
-          child: InkWell(
-            onTap: () => {},
-            child: ListTile(
-              leading: Icon(Icons.supervisor_account),
-              title: Text('Guardian'),
-              trailing: Icon(Icons.chevron_right),
-            ),
-          ),
-        ),
-        SizedBox(
-          height: 15,
-        ),
-        Card(
-          child: InkWell(
-            onTap: () => {},
-            child: ListTile(
-              leading: Icon(Icons.description),
-              title: Text('Admission Details'),
-              trailing: Icon(Icons.chevron_right),
-            ),
-          ),
-        ),
-        SizedBox(
-          height: 15,
-        ),
-        Card(
-          child: InkWell(
-            onTap: () => {},
-            child: ListTile(
-              leading: Icon(Icons.money),
-              title: Text(' Fees Structure'),
-              trailing: Icon(Icons.chevron_right),
-            ),
-          ),
-        ),
-        SizedBox(
-          height: 15,
-        ),
-        Card(
-          child: InkWell(
-            onTap: () => {},
-            child: ListTile(
-              leading: Icon(Icons.logout),
-              title: Text(' Logout'),
-              trailing: Icon(Icons.chevron_right),
+      ),
+    );
+  }
+
+  Widget _field({required String label, required String value}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 18)),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+              ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _sectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 19,
+          fontWeight: FontWeight.bold,
         ),
-      ],
+      ),
+    );
+  }
+}
+
+class _ProfileImage extends StatelessWidget {
+  const _ProfileImage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+      ),
+      padding: const EdgeInsets.all(8),
+      child: Stack(
+        children: [
+          Container(
+            height: 80,
+            width: 80,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.black,
+            ),
+          ),
+          Positioned(
+            right: 8,
+            top: 8,
+            child: IconButton(
+              visualDensity: VisualDensity.compact,
+              icon: const Icon(Icons.edit, color: Colors.white),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ProfileDetailsScreen(),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class EditProfilePage extends StatelessWidget {
+  const EditProfilePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Edit Profile"),
+      ),
+      body: const Center(
+        child: Text("Edit Page"),
+      ),
     );
   }
 }

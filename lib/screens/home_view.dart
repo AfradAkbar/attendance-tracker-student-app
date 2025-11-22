@@ -33,6 +33,8 @@ class HomeView extends StatelessWidget {
       'total': 50,
     };
 
+    print(Theme.of(context).colorScheme.surfaceContainerLow);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF6F8FB),
       body: SafeArea(

@@ -1,4 +1,5 @@
 import 'package:animated_bottom_navigation_bar/animated_bottom_navigation_bar.dart';
+import 'package:attendance_tracker_frontend/screens/attendence_view.dart';
 import 'package:attendance_tracker_frontend/screens/profile_view.dart';
 import 'package:attendance_tracker_frontend/screens/timetable_view.dart';
 import 'package:flutter/material.dart';
@@ -18,7 +19,7 @@ class _AppShellState extends State<AppShell> {
   final iconList = <IconData>[
     Icons.home,
     Icons.schedule, // Timetable
-    Icons.check_circle, // Attendance
+    Icons.calendar_month, // Attendance
     Icons.person, // Profile
   ];
 
@@ -34,7 +35,7 @@ class _AppShellState extends State<AppShell> {
   final List<Widget> pages = [
     const HomeView(),
     const TimetableView(),
-    const HomeView(),
+    const AttendenceView(),
     const ProfileView(),
   ];
 
