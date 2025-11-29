@@ -1,6 +1,6 @@
 import 'dart:convert';
-
 import 'package:attendance_tracker_frontend/constants.dart';
+import 'package:attendance_tracker_frontend/screens/app_shell.dart';
 import 'package:attendance_tracker_frontend/screens/signup_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart';
@@ -13,9 +13,13 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
+final GlobalKey<FormState> _formkey = GlobalKey<FormState>();
+
 class _LoginScreenState extends State<LoginScreen> {
-  TextEditingController _emailController = TextEditingController();
-  TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+
+  bool _isLoading = false;
 
   @override
   Widget build(BuildContext context) {
@@ -24,86 +28,132 @@ class _LoginScreenState extends State<LoginScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 24),
         child: Center(
           child: SingleChildScrollView(
-            child: Center(
+            child: Form(
+              key: _formkey,
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  const Text(
                     "Sign in",
-                    style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   Container(color: Colors.orange, width: 60, height: 2),
-                  SizedBox(height: 30),
-                  Text(
+                  const SizedBox(height: 30),
+
+                  // Email Label
+                  const Text(
                     "Email",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                  TextField(
+
+                  // EMAIL FIELD
+                  TextFormField(
                     controller: _emailController,
-                    style: TextStyle(height: 2.5),
-                    decoration: InputDecoration(
-                      //  border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.email, size: 18.0),
+                    style: const TextStyle(height: 2.5),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Email is required';
+                      }
+                      if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+                        return 'Enter a valid email address';
+                      }
+                      return null;
+                    },
+                    decoration: const InputDecoration(
+                      prefixIcon: Icon(Icons.email, size: 18),
                       hintText: 'Enter your Email',
                     ),
                   ),
-                  SizedBox(height: 30),
-                  Text(
+
+                  const SizedBox(height: 30),
+
+                  // Password Label
+                  const Text(
                     "Password",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
 
-                  TextField(
+                  // PASSWORD FIELD
+                  TextFormField(
                     controller: _passwordController,
                     obscureText: true,
-                    style: TextStyle(height: 2.5),
-                    decoration: InputDecoration(
-                      //  border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.key_rounded, size: 19.0),
+                    style: const TextStyle(height: 2.5),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Password is required';
+                      }
+                      if (value.length < 6) {
+                        return 'Password must be at least 6 characters';
+                      }
+                      return null;
+                    },
+                    decoration: const InputDecoration(
+                      prefixIcon: Icon(Icons.key_rounded, size: 19),
                       hintText: 'Enter your Password',
                     ),
                   ),
-                  SizedBox(height: 10),
 
+                  const SizedBox(height: 10),
+
+                  // Forgot Password
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
                       onPressed: () {},
-                      child: Text("Forgot Password?"),
+                      child: const Text("Forgot Password?"),
                     ),
                   ),
 
-                  SizedBox(height: 30),
+                  const SizedBox(height: 30),
+
+                  // LOGIN BUTTON
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: () {
-                        _onClick(
-                          _emailController.text,
-                          _passwordController.text,
-                        );
-                      },
-                      child: Text('LOGIN'),
+                      onPressed: _isLoading
+                          ? null
+                          : () {
+                              if (_formkey.currentState!.validate()) {
+                                _onClick(
+                                  _emailController.text.trim(),
+                                  _passwordController.text.trim(),
+                                );
+                              }
+                            },
+                      child: _isLoading
+                          ? const CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            )
+                          : const Text('LOGIN'),
                     ),
                   ),
-                  SizedBox(
-                    height: 16,
-                  ),
+
+                  const SizedBox(height: 16),
+
+                  // SIGNUP NAVIGATION
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    spacing: 8,
                     children: [
-                      Text('Dont have an account?'),
+                      const Text('Don’t have an account?'),
                       TextButton(
                         onPressed: () {
                           Navigator.of(context).pushReplacement(
-                            MaterialPageRoute<void>(
+                            MaterialPageRoute(
                               builder: (context) => const SignupScreen(),
                             ),
                           );
                         },
-                        child: Text('Sign Up'),
+                        child: const Text('Sign Up'),
                       ),
                     ],
                   ),
@@ -116,26 +166,48 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  // LOGIN FUNCTION
   Future<void> _onClick(String email, String password) async {
+    setState(() => _isLoading = true);
+
     final url = Uri.parse(kStudentLoginRoute);
     final body = jsonEncode({"email": email, "password": password});
-    final res = await post(
-      url,
-      body: body,
 
-      headers: {"content-type": "application/json"},
-    );
-    print(res.body);
+    try {
+      final res = await post(
+        url,
+        body: body,
+        headers: {"content-type": "application/json"},
+      );
 
-    if (res.statusCode == 200) {
-      final parsedBody = jsonDecode(res.body);
+      print(res.body);
 
-      final prefs = await SharedPreferences.getInstance();
-      prefs.setString('jwt_token', parsedBody['data']['token']);
+      if (res.statusCode == 200) {
+        final parsedBody = jsonDecode(res.body);
+
+        final prefs = await SharedPreferences.getInstance();
+        prefs.setString('jwt_token', parsedBody['data']['token']);
+
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const AppShell()),
+          (route) => false,
+        );
+      } else {
+        _showError("Incorrect email or password");
+      }
+    } catch (e) {
+      _showError("Something went wrong. Please try again.");
     }
+
+    setState(() => _isLoading = false);
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: Colors.red,
+        content: Text(message),
+      ),
+    );
   }
 }
-
-
-// afrad@gmail.com
-// password

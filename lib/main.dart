@@ -1,5 +1,6 @@
 import 'package:attendance_tracker_frontend/screens/app_shell.dart';
 import 'package:attendance_tracker_frontend/screens/login_screen.dart';
+import 'package:attendance_tracker_frontend/screens/splash_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -17,7 +18,6 @@ class MyApp extends StatelessWidget {
       title: 'Flutter Demo',
       theme: ThemeData(
         textTheme: GoogleFonts.urbanistTextTheme(),
-        fontFamily: "Schyler",
         // This is the theme of your application.
         //
         // TRY THIS: Try running your application with "flutter run". You'll see
@@ -35,7 +35,7 @@ class MyApp extends StatelessWidget {
         // tested with just a hot reload.
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const AppShell(),
+      home: const SplashScreen(),
     );
   }
 }

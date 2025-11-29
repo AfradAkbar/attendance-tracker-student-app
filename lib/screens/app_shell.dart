@@ -1,9 +1,11 @@
 import 'package:animated_bottom_navigation_bar/animated_bottom_navigation_bar.dart';
 import 'package:attendance_tracker_frontend/screens/attendence_view.dart';
+import 'package:attendance_tracker_frontend/screens/login_screen.dart';
 import 'package:attendance_tracker_frontend/screens/profile_view.dart';
 import 'package:attendance_tracker_frontend/screens/timetable_view.dart';
 import 'package:flutter/material.dart';
 import 'package:attendance_tracker_frontend/screens/home_view.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
@@ -48,6 +50,11 @@ class _AppShellState extends State<AppShell> {
           style: const TextStyle(color: Colors.black),
         ),
         backgroundColor: Colors.white,
+        leading: IconButton(
+          onPressed: () => showLogoutModal(context),
+
+          icon: Icon(Icons.logout),
+        ),
         elevation: 0,
         centerTitle: true,
       ),

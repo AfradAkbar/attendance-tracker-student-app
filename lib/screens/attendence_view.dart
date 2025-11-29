@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-enum AttendanceStatus { bannin, bannitla, bernathre }
-
 class PeriodAttendanceData {
   final String subjectName;
   final String time;
-  final AttendanceStatus status;
+  final bool markedAsPresent;
+  final bool hasStarted;
 
   PeriodAttendanceData({
+    required this.markedAsPresent,
+    required this.hasStarted,
     required this.subjectName,
     required this.time,
-    required this.status,
   });
 }
 
@@ -19,27 +19,32 @@ final todaysTimetable = [
   PeriodAttendanceData(
     subjectName: 'python',
     time: '9:30 AM-10:30 AM',
-    status: AttendanceStatus.bannin,
+    hasStarted: true,
+    markedAsPresent: true,
   ),
   PeriodAttendanceData(
     subjectName: 'web',
     time: '10:30 AM-11:30 AM',
-    status: AttendanceStatus.bannin,
+    hasStarted: true,
+    markedAsPresent: true,
   ),
   PeriodAttendanceData(
     subjectName: 'maths',
     time: '11:45 AM-12:45 PM',
-    status: AttendanceStatus.bannitla,
+    hasStarted: true,
+    markedAsPresent: true,
   ),
   PeriodAttendanceData(
     subjectName: 'english',
     time: '1:30 PM-2:30 PM',
-    status: AttendanceStatus.bernathre,
+    hasStarted: false,
+    markedAsPresent: true,
   ),
   PeriodAttendanceData(
     subjectName: 'hindi',
     time: '2:30 PM-3:30 PM',
-    status: AttendanceStatus.bannin,
+    hasStarted: false,
+    markedAsPresent: true,
   ),
 ];
 
@@ -90,6 +95,7 @@ class _AttendenceViewState extends State<AttendenceView> {
             shrinkWrap: true,
 
             itemBuilder: (context, index) {
+              final periodData = todaysTimetable[index];
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: Container(
@@ -103,10 +109,16 @@ class _AttendenceViewState extends State<AttendenceView> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(24),
                     ),
-                    tileColor: _getStatusColor(todaysTimetable[index].status),
-                    leading: _getStatusIcon(todaysTimetable[index].status),
-                    title: Text(todaysTimetable[index].subjectName),
-                    subtitle: Text(todaysTimetable[index].time),
+                    tileColor: _getStatusColor(
+                      isPresent: periodData.markedAsPresent,
+                      isStarted: periodData.hasStarted,
+                    ),
+                    leading: _getStatusIcon(
+                      isPresent: periodData.markedAsPresent,
+                      isStarted: periodData.hasStarted,
+                    ),
+                    title: Text(periodData.subjectName),
+                    subtitle: Text(periodData.time),
                   ),
                 ),
               );
@@ -121,23 +133,27 @@ class _AttendenceViewState extends State<AttendenceView> {
     );
   }
 
-  Widget _getStatusIcon(AttendanceStatus status) {
-    if (status == AttendanceStatus.bannin) {
-      return Icon(Icons.check);
-    } else if (status == AttendanceStatus.bannitla) {
-      return Icon(Icons.cancel);
+  Widget _getStatusIcon({required bool isPresent, required bool isStarted}) {
+    if (isStarted) {
+      if (isPresent) {
+        return Icon(Icons.check_box);
+      } else {
+        return Icon(Icons.close);
+      }
     } else {
-      return Icon(Icons.calendar_month);
+      return Icon(Icons.timer);
     }
   }
 
-  Color _getStatusColor(AttendanceStatus status) {
-    if (status == AttendanceStatus.bannin) {
-      return Colors.red.shade200;
-    } else if (status == AttendanceStatus.bannitla) {
-      return Colors.lightGreen.shade300;
+  Color _getStatusColor({required bool isPresent, required bool isStarted}) {
+    if (isStarted) {
+      if (isPresent) {
+        return Colors.lightGreen.shade100;
+      } else {
+        return Colors.red.shade200;
+      }
     } else {
-      return Colors.blue.shade300;
+      return Colors.grey.shade300;
     }
   }
 }
