@@ -204,12 +204,13 @@ class _ProfileViewState extends State<ProfileView> {
                                 shape: BoxShape.circle,
                                 color: Colors.black,
                               ),
+                              child: ClipOval(
+                                child: Image.network(
+                                  userData!['image_url'],
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
                             ),
-                            // Positioned(
-                            //   right: 8,
-                            //   top: 8,
-                            //   // child:
-                            // ),
                           ],
                         ),
                       ),

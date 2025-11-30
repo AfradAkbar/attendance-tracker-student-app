@@ -192,8 +192,8 @@ class _LoginScreenState extends State<LoginScreen> {
           MaterialPageRoute(builder: (_) => const AppShell()),
           (route) => false,
         );
-      } else {
-        _showError("Incorrect email or password");
+      } else if (res.statusCode == 401) {
+        _showError("Waiting for acceptance");
       }
     } catch (e) {
       _showError("Something went wrong. Please try again.");

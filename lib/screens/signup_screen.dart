@@ -181,27 +181,31 @@ class _SignupScreenState extends State<SignupScreen> {
     final url = '$kBaseUrl/student/signup';
 
     try {
-      // Create multipart request
-      var request = http.MultipartRequest('POST', Uri.parse(url));
+      // Prepare JSON body including base64 image so backend can use req.body.image
+      final Map<String, dynamic> body = {
+        'name': name,
+        'email': email,
+        'phone_number': phone,
+        'batch': batchId,
+        'password': password,
+      };
+      if (dob.isNotEmpty) body['dob'] = dob;
 
-      // Add form fields
-      request.fields['name'] = name;
-      request.fields['email'] = email;
-      request.fields['phone_number'] = phone;
-      request.fields['batch_id'] = batchId;
-      request.fields['password'] = password;
-      if (dob.isNotEmpty) {
-        request.fields['dob'] = dob;
+      try {
+        final bytes = await _selectedImage!.readAsBytes();
+        final b64 = base64Encode(bytes);
+        final dataUri = 'data:image/jpeg;base64,$b64';
+        body['image'] = dataUri; // backend will read this from req.body.image
+      } catch (e) {
+        log('Failed to read image bytes for base64: $e');
       }
 
-      // Add image file with field name "req.file" or "image" (adjust based on your backend)
-      request.files.add(
-        await http.MultipartFile.fromPath('req.file', _selectedImage!.path),
+      // Send JSON request
+      final response = await post(
+        Uri.parse(url),
+        headers: {'content-type': 'application/json'},
+        body: jsonEncode(body),
       );
-
-      // Send request
-      var streamedResponse = await request.send();
-      var response = await http.Response.fromStream(streamedResponse);
 
       log('[signup] ${response.statusCode} ${response.body}');
 

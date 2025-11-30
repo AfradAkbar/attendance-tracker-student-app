@@ -7,3 +7,6 @@ const kBatchListUrl = '$kBaseUrl/student/batch';
 const kMyDetails = '$kBaseUrl/student/me';
 
 const kUpdateProfile = '$kBaseUrl/student/update';
+
+// Timetable endpoint
+const kTimetable = '$kBaseUrl/timetable';

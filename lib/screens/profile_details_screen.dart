@@ -37,8 +37,8 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
     fullName.text = data["name"] ?? "";
     phone.text = "${data["phone_number"] ?? ""}";
     email.text = data["email"] ?? "";
-    batch.text = data["batch_id"]?["name"] ?? ""; // e.g., "BCA - 2026/2029"
-    
+    batch.text = data["batch_id"]?["name"] ?? "";
+
     final rawDob = data['dob'];
     if (rawDob != null) {
       if (rawDob is String) {
