@@ -186,7 +186,10 @@ class _LoginScreenState extends State<LoginScreen> {
         final parsedBody = jsonDecode(res.body);
 
         final prefs = await SharedPreferences.getInstance();
+        // Store JWT token for authentication
         prefs.setString('jwt_token', parsedBody['data']['token']);
+        // Store student ID for fetching attendance records
+        prefs.setString('student_id', parsedBody['data']['user']['_id']);
 
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const AppShell()),
