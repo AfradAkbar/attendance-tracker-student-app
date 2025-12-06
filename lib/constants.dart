@@ -1,4 +1,4 @@
-const kBaseUrl = 'http://127.0.0.1:3000/api';
+const kBaseUrl = 'http://192.168.1.20:3000/api';
 
 const kStudentLoginRoute = '$kBaseUrl/student/login';
 
@@ -10,6 +10,7 @@ const kUpdateProfile = '$kBaseUrl/student/update';
 
 // Timetable endpoint
 const kTimetable = '$kBaseUrl/timetable';
+const kTimetableOfDay = '$kBaseUrl/timetable/day';
 
 // Attendance endpoints (authenticated - uses JWT token, no student_id needed)
 // Get my attendance for a specific date

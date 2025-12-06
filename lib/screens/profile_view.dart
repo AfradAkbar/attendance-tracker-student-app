@@ -1,6 +1,7 @@
 import 'package:attendance_tracker_frontend/constants.dart';
 import 'package:attendance_tracker_frontend/screens/login_screen.dart';
 import 'package:attendance_tracker_frontend/screens/profile_details_screen.dart';
+import 'package:attendance_tracker_frontend/notifiers/user_notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
@@ -14,24 +15,17 @@ class ProfileView extends StatefulWidget {
 }
 
 class _ProfileViewState extends State<ProfileView> {
-  Map<String, dynamic>? userData;
-  bool isLoading = true;
-
   @override
   void initState() {
     super.initState();
-    _loadProfile();
+    _refreshProfile();
   }
 
-  Future<void> _loadProfile() async {
-    final data = await _getProfileData();
-    setState(() {
-      userData = data?['user'];
-      isLoading = false;
-    });
+  Future<void> _refreshProfile() async {
+    await _getProfileData();
   }
 
-  Future<Map<String, dynamic>?> _getProfileData() async {
+  Future<void> _getProfileData() async {
     final url = Uri.parse(kMyDetails);
 
     final prefs = await SharedPreferences.getInstance();
@@ -49,177 +43,165 @@ class _ProfileViewState extends State<ProfileView> {
       print('[_getProfileData] ${res.statusCode} => ${res.body}');
 
       if (res.statusCode == 200) {
-        return jsonDecode(res.body) as Map<String, dynamic>;
+        final data = jsonDecode(res.body) as Map<String, dynamic>;
+        final user = data['user'] as Map<String, dynamic>;
+        userNotifier.value = UserModel.fromJson(user);
       }
     } catch (e) {
       print("ERROR: $e");
     }
-    return null;
   }
 
   @override
   Widget build(BuildContext context) {
-    final batch = userData?['batch_id'];
-    final course = batch?['course'];
-
-    return isLoading
-        ? Scaffold(
+    return ValueListenableBuilder<UserModel?>(
+      valueListenable: userNotifier,
+      builder: (context, userData, child) {
+        if (userData == null) {
+          return Scaffold(
             backgroundColor: Colors.white,
             body: const Center(
               child: CircularProgressIndicator(color: Colors.yellow),
             ),
-          )
-        : Scaffold(
-            backgroundColor: Colors.black,
-            appBar: AppBar(
-              iconTheme: const IconThemeData(color: Colors.white),
-              backgroundColor: Colors.transparent,
-              actions: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: IconButton(
-                    visualDensity: VisualDensity.compact,
-                    icon: const Icon(
-                      Icons.edit,
-                      color: Colors.white,
-                    ),
+          );
+        }
 
-                    onPressed: () async {
-                      final isUpdated = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ProfileDetailsScreen(
-                            userData: userData ?? {},
-                          ),
+        final batch = userData.batchId;
+        final course = batch?['course'];
+
+        return Scaffold(
+          backgroundColor: Colors.black,
+          appBar: AppBar(
+            iconTheme: const IconThemeData(color: Colors.white),
+            backgroundColor: Colors.transparent,
+            actions: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: IconButton(
+                  visualDensity: VisualDensity.compact,
+                  icon: const Icon(
+                    Icons.edit,
+                    color: Colors.white,
+                  ),
+                  onPressed: () async {
+                    final isUpdated = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ProfileDetailsScreen(
+                          userData: userData.toJson(),
                         ),
-                      );
-                      if (isUpdated) _loadProfile();
-                    },
+                      ),
+                    );
+                    if (isUpdated) _refreshProfile();
+                  },
+                ),
+              ),
+            ],
+          ),
+          body: Padding(
+            padding: const EdgeInsets.only(top: 100),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  width: double.infinity,
+                  height: double.infinity,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(30),
+                      topRight: Radius.circular(30),
+                    ),
+                  ),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 60),
+
+                        // ===== BASIC INFO =====
+                        if (userData.name.isNotEmpty)
+                          _field(
+                            label: "Full Name",
+                            value: userData.name.toUpperCase(),
+                          ),
+
+                        if (userData.email.isNotEmpty)
+                          _field(label: "Email", value: userData.email),
+
+                        if (userData.phoneNumber.isNotEmpty)
+                          _field(
+                            label: "Phone",
+                            value: userData.phoneNumber,
+                          ),
+
+                        // ===== ADDRESS =====
+                        if (userData.address != null &&
+                            userData.address!.isNotEmpty)
+                          _field(
+                            label: "Address",
+                            value: userData.address!,
+                          ),
+
+                        // ===== COURSE FROM API =====
+                        if (course?['name'] != null)
+                          _field(
+                            label: "Course",
+                            value: course!['name'],
+                          ),
+                        // ===== BATCH NAME =====
+                        if (batch?['name'] != null)
+                          _field(
+                            label: "Batch",
+                            value: batch!['name'],
+                          ),
+
+                        const SizedBox(height: 20),
+                      ],
+                    ),
                   ),
                 ),
-              ],
-            ),
 
-            body: Padding(
-              padding: const EdgeInsets.only(top: 100),
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Container(
-                    width: double.infinity,
-                    height: double.infinity,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(30),
-                        topRight: Radius.circular(30),
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  top: -40,
+                  child: Center(
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
                       ),
-                    ),
-                    child: SingleChildScrollView(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      padding: const EdgeInsets.all(8),
+                      child: Stack(
                         children: [
-                          const SizedBox(height: 60),
-
-                          // ===== BASIC INFO =====
-                          if (userData?['name'] != null)
-                            _field(
-                              label: "Full Name",
-                              value: userData!['name'].toString().toUpperCase(),
+                          Container(
+                            height: 80,
+                            width: 80,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.black,
                             ),
-
-                          if (userData?['email'] != null)
-                            _field(label: "Email", value: userData!['email']),
-
-                          if (userData?['phone_number'] != null)
-                            _field(
-                              label: "Phone",
-                              value: userData!['phone_number'].toString(),
+                            child: ClipOval(
+                              child: userData.imageUrl != null
+                                  ? Image.network(
+                                      userData.imageUrl!,
+                                      fit: BoxFit.cover,
+                                    )
+                                  : const Icon(Icons.person, size: 40),
                             ),
-
-                          // ===== ADDRESS =====
-                          if (userData?['address'] != null)
-                            _field(
-                              label: "Address",
-                              value: userData!['address'].toString(),
-                            ),
-
-                          // ===== COURSE FROM API =====
-                          if (course?['name'] != null)
-                            _field(
-                              label: "Course",
-                              value: course!['name'],
-                            ), // Example: BCA
-                          // ===== BATCH NAME =====
-                          if (batch?['name'] != null)
-                            _field(
-                              label: "Batch",
-                              value: batch!['name'],
-                            ), // Example: BCA - 2026/2029
-
-                          const SizedBox(height: 20),
-
-                          // ===== GUARDIAN ONLY IF EXISTS =====
-                          // if (userData?['guardian'] != null)
-                          //   _sectionTitle("Guardian Details"),
-
-                          // if (userData?['guardian']?['name'] != null)
-                          //   _field(
-                          //     label: "Guardian Name",
-                          //     value: userData?['guardian']['name'],
-                          //   ),
-
-                          // if (userData?['guardian']?['phone'] != null)
-                          //   _field(
-                          //     label: "Guardian Phone",
-                          //     value: userData!['guardian']['phone'].toString(),
-                          //   ),
-
-                          // const SizedBox(height: 30),
+                          ),
                         ],
                       ),
                     ),
                   ),
-
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    top: -40,
-                    child: Center(
-                      // child: _ProfileImage(
-                      //   userData: userData ?? {},
-                      // ),
-                      child: Container(
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                        ),
-                        padding: const EdgeInsets.all(8),
-                        child: Stack(
-                          children: [
-                            Container(
-                              height: 80,
-                              width: 80,
-                              decoration: const BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.black,
-                              ),
-                              child: ClipOval(
-                                child: Image.network(
-                                  userData!['image_url'],
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-          );
+          ),
+        );
+      },
+    );
   }
 
   Widget _field({required String label, required String value}) {

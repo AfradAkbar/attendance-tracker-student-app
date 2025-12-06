@@ -22,6 +22,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
   final TextEditingController batch = TextEditingController();
   final TextEditingController dob = TextEditingController();
   final TextEditingController address = TextEditingController();
+  String? image_url;
 
   String? gender;
 
@@ -38,6 +39,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
     phone.text = "${data["phone_number"] ?? ""}";
     email.text = data["email"] ?? "";
     batch.text = data["batch_id"]?["name"] ?? "";
+    image_url = data["image_url"] ?? "";
 
     final rawDob = data['dob'];
     if (rawDob != null) {
@@ -230,18 +232,30 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
               top: -40,
               child: Center(
                 child: Container(
-                  padding: const EdgeInsets.all(8),
                   decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
                     color: Colors.white,
+                    shape: BoxShape.circle,
                   ),
-                  child: Container(
-                    height: 80,
-                    width: 80,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.black,
-                    ),
+                  padding: const EdgeInsets.all(8),
+                  child: Stack(
+                    children: [
+                      Container(
+                        height: 80,
+                        width: 80,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.black,
+                        ),
+                        child: ClipOval(
+                          child: image_url != null
+                              ? Image.network(
+                                  image_url!,
+                                  fit: BoxFit.cover,
+                                )
+                              : const Icon(Icons.person, size: 40),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
