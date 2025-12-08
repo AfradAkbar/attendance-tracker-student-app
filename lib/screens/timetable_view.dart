@@ -156,225 +156,307 @@ class _TimetableViewState extends State<TimetableView>
     }
   }
 
+  // Soft color palette
+  static const Color primaryColor = Color(0xFF5B8A72); // Sage green
+  static const Color surfaceColor = Color(0xFFF8F6F4); // Warm off-white
+  static const Color textDark = Color(0xFF2D3436); // Charcoal
+  static const Color textMuted = Color(0xFF636E72); // Gray
+
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return const Scaffold(
-        backgroundColor: Color(0xFFF6F8FB),
-        body: Center(child: CircularProgressIndicator()),
+      return Scaffold(
+        backgroundColor: surfaceColor,
+        body: Center(child: CircularProgressIndicator(color: primaryColor)),
       );
     }
 
     if (error != null) {
       return Scaffold(
-        backgroundColor: const Color(0xFFF6F8FB),
-        body: Center(child: Text(error!)),
-      );
-    }
-
-    return Scaffold(
-      backgroundColor: const Color(0xFFF6F8FB),
-
-      // TOP AREA WITH NEXT / PREV
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(70),
-        child: Container(
-          color: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          child: ValueListenableBuilder<int>(
-            valueListenable: dayIndexNotifier,
-            builder: (context, dayIndex, _) {
-              return Row(
-                children: [
-                  IconButton(
-                    onPressed: prevDay,
-                    icon: const Icon(Icons.chevron_left, size: 30),
-                  ),
-
-                  Expanded(
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 250),
-                      child: Text(
-                        TimetableView.days[dayIndex],
-                        key: ValueKey(TimetableView.days[dayIndex]),
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.indigo,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  IconButton(
-                    onPressed: nextDay,
-                    icon: const Icon(Icons.chevron_right, size: 30),
-                  ),
-                ],
-              );
-            },
-          ),
-        ),
-      ),
-
-      // BODY WITH PREMIUM ANIMATIONS
-      body: AnimatedBuilder(
-        animation: tabController,
-        builder: (context, _) {
-          final day = TimetableView.days[tabController.index];
-
-          return AnimatedSwitcher(
-            duration: const Duration(milliseconds: 350),
-            switchInCurve: Curves.easeOutCubic,
-            switchOutCurve: Curves.easeInCubic,
-            transitionBuilder: (child, animation) {
-              final isForward = tabController.index > dayIndexNotifier.value;
-
-              final slideTween = Tween<Offset>(
-                begin: Offset(isForward ? 0.15 : -0.15, 0),
-                end: Offset.zero,
-              );
-
-              final scaleTween = Tween<double>(
-                begin: 0.97,
-                end: 1.0,
-              );
-
-              return FadeTransition(
-                opacity: animation,
-                child: SlideTransition(
-                  position: slideTween.animate(
-                    CurvedAnimation(
-                      parent: animation,
-                      curve: Curves.easeOutExpo,
-                    ),
-                  ),
-                  child: ScaleTransition(
-                    scale: scaleTween.animate(
-                      CurvedAnimation(
-                        parent: animation,
-                        curve: Curves.easeOutCubic,
-                      ),
-                    ),
-                    child: child,
-                  ),
-                ),
-              );
-            },
-            child: Container(
-              key: ValueKey(day),
-              child: _buildDayView(day),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  // BUILD A DAY'S PERIOD LIST
-  Widget _buildDayView(String day) {
-    return ListView.builder(
-      padding: const EdgeInsets.all(14),
-      itemCount: maxHours,
-      itemBuilder: (context, idx) {
-        final hour = idx + 1;
-        return _buildPeriodCard(hour, timetable[day]![hour]);
-      },
-    );
-  }
-
-  // CARD UI
-  Widget _buildPeriodCard(int hour, TimetableCell? cell) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        // borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Period Row
-          Row(
+        backgroundColor: surfaceColor,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                "Period $hour",
-                style: TextStyle(
-                  color: Colors.indigo.shade400,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  decoration: TextDecoration.underline,
-                  decorationColor: Colors.indigo.shade400,
-                  decorationThickness: 1.5,
+              Icon(Icons.error_outline, size: 48, color: Colors.grey.shade400),
+              const SizedBox(height: 16),
+              Text(error!, style: TextStyle(color: textMuted)),
+              const SizedBox(height: 24),
+              TextButton(
+                onPressed: _getTimeTable,
+                child: Text(
+                  'Try Again',
+                  style: TextStyle(
+                    color: primaryColor,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],
           ),
+        ),
+      );
+    }
 
-          const SizedBox(height: 12),
-
-          if (cell == null || cell.isFree)
-            Row(
-              children: [
-                const Icon(Icons.hourglass_empty, color: Colors.grey, size: 24),
-                const SizedBox(width: 10),
-                Text(
-                  "Free Period",
-                  style: TextStyle(
-                    color: Colors.grey.shade700,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            )
-          else ...[
-            Row(
-              children: [
-                const Icon(Icons.book, color: Colors.indigo, size: 24),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    cell.subjectName.toUpperCase(),
+    return Scaffold(
+      backgroundColor: surfaceColor,
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Minimal Header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Timetable",
                     style: TextStyle(
-                      color: Colors.indigo.shade700,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
+                      fontSize: 28,
+                      fontWeight: FontWeight.w700,
+                      color: textDark,
+                      letterSpacing: -0.5,
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 4),
+                  Text(
+                    "Your weekly schedule",
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: textMuted,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ],
+              ),
             ),
 
-            const SizedBox(height: 8),
+            // Sleek Day Selector
+            Container(
+              height: 50,
+              margin: const EdgeInsets.only(bottom: 10),
+              child: ValueListenableBuilder<int>(
+                valueListenable: dayIndexNotifier,
+                builder: (context, dayIndex, _) {
+                  return ListView.separated(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    scrollDirection: Axis.horizontal,
+                    itemCount: TimetableView.days.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 12),
+                    itemBuilder: (context, index) {
+                      final isSelected = index == dayIndex;
+                      final dayName = TimetableView.days[index];
+                      final dayAbbrev = dayName.substring(0, 3);
 
-            Row(
-              children: [
-                const Icon(
-                  Icons.person_outline,
-                  color: Colors.black54,
-                  size: 22,
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  cell.staffName,
-                  style: const TextStyle(
-                    color: Colors.black87,
-                    fontSize: 15,
-                  ),
-                ),
-              ],
+                      return GestureDetector(
+                        onTap: () {
+                          tabController.animateTo(index);
+                          dayIndexNotifier.value = index;
+                        },
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: isSelected ? primaryColor : Colors.white,
+                            borderRadius: BorderRadius.circular(25),
+                            border: Border.all(
+                              color: isSelected
+                                  ? primaryColor
+                                  : Colors.grey.shade200,
+                            ),
+                            boxShadow: isSelected
+                                ? [
+                                    BoxShadow(
+                                      color: primaryColor.withOpacity(0.3),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ]
+                                : [],
+                          ),
+                          child: Text(
+                            dayAbbrev,
+                            style: TextStyle(
+                              color: isSelected ? Colors.white : textMuted,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+
+            // Timeline View
+            Expanded(
+              child: AnimatedBuilder(
+                animation: tabController,
+                builder: (context, _) {
+                  final day = TimetableView.days[tabController.index];
+                  return AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 250),
+                    child: Container(
+                      key: ValueKey(day),
+                      child: _buildTimelineView(day),
+                    ),
+                  );
+                },
+              ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimelineView(String day) {
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(24, 10, 24, 24),
+      itemCount: maxHours,
+      itemBuilder: (context, idx) {
+        final hour = idx + 1;
+        final isLast = idx == maxHours - 1;
+        return _buildTimelineItem(hour, timetable[day]![hour], isLast);
+      },
+    );
+  }
+
+  Widget _buildTimelineItem(int hour, TimetableCell? cell, bool isLast) {
+    final isFree = cell == null || cell.isFree;
+
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Minimal Timeline
+          SizedBox(
+            width: 40,
+            child: Column(
+              children: [
+                Text(
+                  "$hour",
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: isFree ? Colors.grey.shade400 : textDark,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                if (!isLast)
+                  Expanded(
+                    child: Container(
+                      width: 2,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade200,
+                        borderRadius: BorderRadius.circular(1),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+
+          // Content Card
+          Expanded(
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isFree ? Colors.transparent : Colors.grey.shade100,
+                ),
+                boxShadow: isFree
+                    ? []
+                    : [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.02),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+              ),
+              child: isFree
+                  ? Row(
+                      children: [
+                        Icon(
+                          Icons.coffee_rounded,
+                          size: 16,
+                          color: Colors.grey.shade300,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          "Free Period",
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey.shade400,
+                          ),
+                        ),
+                      ],
+                    )
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 3,
+                              height: 14,
+                              decoration: BoxDecoration(
+                                color: primaryColor,
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                cell.subjectName,
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  color: textDark,
+                                  letterSpacing: -0.3,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (cell.staffName.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.person_outline_rounded,
+                                size: 14,
+                                color: textMuted,
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  cell.staffName,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: textMuted,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
+            ),
+          ),
         ],
       ),
     );

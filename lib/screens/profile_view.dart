@@ -1,11 +1,8 @@
-import 'package:attendance_tracker_frontend/constants.dart';
 import 'package:attendance_tracker_frontend/screens/login_screen.dart';
 import 'package:attendance_tracker_frontend/screens/profile_details_screen.dart';
 import 'package:attendance_tracker_frontend/notifiers/user_notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 
 class ProfileView extends StatefulWidget {
   const ProfileView({super.key});
@@ -15,42 +12,9 @@ class ProfileView extends StatefulWidget {
 }
 
 class _ProfileViewState extends State<ProfileView> {
-  @override
-  void initState() {
-    super.initState();
-    _refreshProfile();
-  }
-
-  Future<void> _refreshProfile() async {
-    await _getProfileData();
-  }
-
-  Future<void> _getProfileData() async {
-    final url = Uri.parse(kMyDetails);
-
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('jwt_token') ?? '';
-
-    try {
-      final res = await http.get(
-        url,
-        headers: {
-          'content-type': 'application/json',
-          if (token.isNotEmpty) 'authorization': 'Bearer $token',
-        },
-      );
-
-      print('[_getProfileData] ${res.statusCode} => ${res.body}');
-
-      if (res.statusCode == 200) {
-        final data = jsonDecode(res.body) as Map<String, dynamic>;
-        final user = data['user'] as Map<String, dynamic>;
-        userNotifier.value = UserModel.fromJson(user);
-      }
-    } catch (e) {
-      print("ERROR: $e");
-    }
-  }
+  // Soft color palette
+  static const Color primaryColor = Color(0xFF5B8A72); // Sage green
+  static const Color surfaceColor = Color(0xFFF8F6F4); // Warm off-white
 
   @override
   Widget build(BuildContext context) {
@@ -59,9 +23,9 @@ class _ProfileViewState extends State<ProfileView> {
       builder: (context, userData, child) {
         if (userData == null) {
           return Scaffold(
-            backgroundColor: Colors.white,
-            body: const Center(
-              child: CircularProgressIndicator(color: Colors.yellow),
+            backgroundColor: surfaceColor,
+            body: Center(
+              child: CircularProgressIndicator(color: primaryColor),
             ),
           );
         }
@@ -70,133 +34,205 @@ class _ProfileViewState extends State<ProfileView> {
         final course = batch?['course'];
 
         return Scaffold(
-          backgroundColor: Colors.black,
-          appBar: AppBar(
-            iconTheme: const IconThemeData(color: Colors.white),
-            backgroundColor: Colors.transparent,
-            actions: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: IconButton(
-                  visualDensity: VisualDensity.compact,
-                  icon: const Icon(
-                    Icons.edit,
-                    color: Colors.white,
-                  ),
-                  onPressed: () async {
-                    final isUpdated = await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ProfileDetailsScreen(
-                          userData: userData.toJson(),
-                        ),
+          backgroundColor: surfaceColor,
+          body: SafeArea(
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Colored Header
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+                    decoration: BoxDecoration(
+                      color: primaryColor,
+                      borderRadius: const BorderRadius.only(
+                        bottomLeft: Radius.circular(28),
+                        bottomRight: Radius.circular(28),
                       ),
-                    );
-                    if (isUpdated) _refreshProfile();
-                  },
-                ),
-              ),
-            ],
-          ),
-          body: Padding(
-            padding: const EdgeInsets.only(top: 100),
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Container(
-                  width: double.infinity,
-                  height: double.infinity,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(30),
-                      topRight: Radius.circular(30),
                     ),
-                  ),
-                  child: SingleChildScrollView(
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      spacing: 50,
                       children: [
-                        const SizedBox(height: 60),
-
-                        // ===== BASIC INFO =====
-                        if (userData.name.isNotEmpty)
-                          _field(
-                            label: "Full Name",
-                            value: userData.name.toUpperCase(),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              "Profile",
+                              style: TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                                letterSpacing: 1,
+                              ),
+                            ),
+                            Row(
+                              children: [
+                                // Edit button
+                                IconButton(
+                                  onPressed: () async {
+                                    await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            ProfileDetailsScreen(
+                                              userData: userData.toJson(),
+                                            ),
+                                      ),
+                                    );
+                                  },
+                                  icon: const Icon(
+                                    Icons.edit_outlined,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                // Logout button
+                                IconButton(
+                                  onPressed: () => showLogoutModal(context),
+                                  icon: const Icon(
+                                    Icons.logout_rounded,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        Center(
+                          child: Column(
+                            children: [
+                              Container(
+                                height: 100,
+                                width: 100,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.grey.shade200,
+                                  border: Border.all(
+                                    color: Colors.grey.shade200,
+                                    width: 3,
+                                  ),
+                                ),
+                                child: ClipOval(
+                                  child: userData.imageUrl != null
+                                      ? Image.network(
+                                          userData.imageUrl!,
+                                          fit: BoxFit.cover,
+                                        )
+                                      : Icon(
+                                          Icons.person_rounded,
+                                          size: 48,
+                                          color: Colors.grey.shade400,
+                                        ),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              if (userData.name.isNotEmpty)
+                                Text(
+                                  userData.name,
+                                  style: const TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              if (userData.email.isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: Text(
+                                    userData.email,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
-
-                        if (userData.email.isNotEmpty)
-                          _field(label: "Email", value: userData.email),
-
-                        if (userData.phoneNumber.isNotEmpty)
-                          _field(
-                            label: "Phone",
-                            value: userData.phoneNumber,
-                          ),
-
-                        // ===== ADDRESS =====
-                        if (userData.address != null &&
-                            userData.address!.isNotEmpty)
-                          _field(
-                            label: "Address",
-                            value: userData.address!,
-                          ),
-
-                        // ===== COURSE FROM API =====
-                        if (course?['name'] != null)
-                          _field(
-                            label: "Course",
-                            value: course!['name'],
-                          ),
-                        // ===== BATCH NAME =====
-                        if (batch?['name'] != null)
-                          _field(
-                            label: "Batch",
-                            value: batch!['name'],
-                          ),
-
-                        const SizedBox(height: 20),
+                        ),
                       ],
                     ),
                   ),
-                ),
 
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  top: -40,
-                  child: Center(
-                    child: Container(
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                      padding: const EdgeInsets.all(8),
-                      child: Stack(
-                        children: [
-                          Container(
-                            height: 80,
-                            width: 80,
-                            decoration: const BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.black,
-                            ),
-                            child: ClipOval(
-                              child: userData.imageUrl != null
-                                  ? Image.network(
-                                      userData.imageUrl!,
-                                      fit: BoxFit.cover,
-                                    )
-                                  : const Icon(Icons.person, size: 40),
-                            ),
+                  const SizedBox(height: 32),
+
+                  // Personal Information Section
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _sectionTitle("Personal Information"),
+                        const SizedBox(height: 16),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.grey.shade100),
                           ),
-                        ],
-                      ),
+                          child: Column(
+                            children: [
+                              if (userData.phoneNumber.isNotEmpty)
+                                _infoRow(
+                                  Icons.phone_outlined,
+                                  "Phone",
+                                  userData.phoneNumber,
+                                ),
+                              if (userData.address != null &&
+                                  userData.address!.isNotEmpty)
+                                _infoRow(
+                                  Icons.location_on_outlined,
+                                  "Address",
+                                  userData.address!,
+                                  isLast: true,
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-              ],
+
+                  const SizedBox(height: 24),
+
+                  // Academic Details Section
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _sectionTitle("Academic Details"),
+                        const SizedBox(height: 16),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.grey.shade100),
+                          ),
+                          child: Column(
+                            children: [
+                              if (course?['name'] != null)
+                                _infoRow(
+                                  Icons.school_outlined,
+                                  "Course",
+                                  course!['name'],
+                                ),
+                              if (batch?['name'] != null)
+                                _infoRow(
+                                  Icons.class_outlined,
+                                  "Batch",
+                                  batch!['name'],
+                                  isLast: true,
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 40),
+                ],
+              ),
             ),
           ),
         );
@@ -204,37 +240,56 @@ class _ProfileViewState extends State<ProfileView> {
     );
   }
 
-  Widget _field({required String label, required String value}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(fontSize: 18)),
-          Flexible(
-            child: Text(
-              value,
-              textAlign: TextAlign.right,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 15,
-              ),
-            ),
-          ),
-        ],
+  Widget _sectionTitle(String title) {
+    return Text(
+      title,
+      style: TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        color: Colors.black,
+        letterSpacing: 1,
       ),
     );
   }
 
-  Widget _sectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
-      child: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 19,
-          fontWeight: FontWeight.bold,
-        ),
+  Widget _infoRow(
+    IconData icon,
+    String label,
+    String value, {
+    bool isLast = false,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        border: isLast
+            ? null
+            : Border(bottom: BorderSide(color: Colors.grey.shade100)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: Colors.grey.shade400),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(fontSize: 12, color: Colors.black87),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black87,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

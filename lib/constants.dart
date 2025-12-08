@@ -1,4 +1,4 @@
-const kBaseUrl = 'http://192.168.1.20:3000/api';
+const kBaseUrl = 'http://127.0.0.1:3000/api';
 
 const kStudentLoginRoute = '$kBaseUrl/student/login';
 

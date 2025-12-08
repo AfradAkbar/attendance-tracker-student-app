@@ -258,83 +258,151 @@ class _AttendenceViewState extends State<AttendenceView> {
         selectedDate.weekday == DateTime.sunday;
   }
 
+  // Soft color palette
+  static const Color primaryColor = Color(0xFF5B8A72); // Sage green
+  static const Color surfaceColor = Color(0xFFF8F6F4); // Warm off-white
+  static const Color textDark = Color(0xFF2D3436); // Charcoal
+  static const Color textMuted = Color(0xFF636E72); // Gray
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F8FB),
-
-      // TOP AREA WITH DATE NAVIGATION
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(70),
-        child: Container(
-          color: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          child: Row(
-            children: [
-              IconButton(
-                onPressed: _prevDay,
-                icon: const Icon(Icons.chevron_left, size: 30),
+      backgroundColor: surfaceColor,
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Colored Header
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+              decoration: BoxDecoration(
+                color: primaryColor,
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(28),
+                  bottomRight: Radius.circular(28),
+                ),
               ),
-              Expanded(
-                child: GestureDetector(
-                  onTap: () async {
-                    // Show date picker
-                    final picked = await showDatePicker(
-                      context: context,
-                      initialDate: selectedDate,
-                      firstDate: DateTime(2020),
-                      lastDate: DateTime.now(),
-                    );
-                    if (picked != null) {
-                      setState(() {
-                        selectedDate = picked;
-                      });
-                      _fetchAttendance();
-                    }
-                  },
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.calendar_today,
-                        size: 18,
-                        color: Colors.indigo,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        formattedDate,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.indigo,
-                        ),
-                      ),
-                    ],
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Attendance",
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                      letterSpacing: 1,
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 4),
+                  Text(
+                    "Track your daily presence",
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.white.withOpacity(0.8),
+                    ),
+                  ),
+                  // Date Navigator - Clean minimal style
+                  const SizedBox(height: 20),
+                  //
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.grey.shade100),
+                    ),
+                    child: Row(
+                      children: [
+                        IconButton(
+                          onPressed: _prevDay,
+                          icon: Icon(
+                            Icons.chevron_left_rounded,
+                            size: 24,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () async {
+                              final picked = await showDatePicker(
+                                context: context,
+                                initialDate: selectedDate,
+                                firstDate: DateTime(2020),
+                                lastDate: DateTime.now(),
+                                builder: (context, child) {
+                                  return Theme(
+                                    data: Theme.of(context).copyWith(
+                                      colorScheme: const ColorScheme.light(
+                                        primary: Colors.black87,
+                                      ),
+                                    ),
+                                    child: child!,
+                                  );
+                                },
+                              );
+                              if (picked != null) {
+                                setState(() => selectedDate = picked);
+                                _fetchAttendance();
+                              }
+                            },
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.calendar_today_outlined,
+                                  size: 16,
+                                  color: Colors.grey.shade500,
+                                ),
+                                const SizedBox(width: 10),
+                                Text(
+                                  formattedDate,
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: canGoNext ? _nextDay : null,
+                          icon: Icon(
+                            Icons.chevron_right_rounded,
+                            size: 24,
+                            color: canGoNext
+                                ? Colors.grey.shade600
+                                : Colors.grey.shade300,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              IconButton(
-                onPressed: canGoNext ? _nextDay : null,
-                icon: Icon(
-                  Icons.chevron_right,
-                  size: 30,
-                  color: canGoNext ? null : Colors.grey.shade300,
-                ),
-              ),
-            ],
-          ),
+            ),
+
+            const SizedBox(height: 10),
+
+            // Body
+            Expanded(child: _buildBody()),
+          ],
         ),
       ),
-
-      // BODY
-      body: _buildBody(),
     );
   }
 
   Widget _buildBody() {
     if (isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(
+        child: CircularProgressIndicator(color: primaryColor),
+      );
     }
 
     if (error != null) {
@@ -344,18 +412,23 @@ class _AttendenceViewState extends State<AttendenceView> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
+              Icon(Icons.error_outline, size: 48, color: Colors.grey.shade400),
               const SizedBox(height: 16),
               Text(
                 error!,
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.red.shade700, fontSize: 16),
+                style: TextStyle(color: Colors.grey.shade600),
               ),
-              const SizedBox(height: 16),
-              ElevatedButton.icon(
+              const SizedBox(height: 24),
+              TextButton(
                 onPressed: _fetchAttendance,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Retry'),
+                child: Text(
+                  'Try Again',
+                  style: TextStyle(
+                    color: primaryColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
             ],
           ),
@@ -368,15 +441,31 @@ class _AttendenceViewState extends State<AttendenceView> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.weekend, size: 64, color: Colors.grey.shade400),
-            const SizedBox(height: 16),
-            Text(
-              'Weekend - No Classes',
-              style: TextStyle(
-                fontSize: 18,
-                color: Colors.grey.shade600,
-                fontWeight: FontWeight.w500,
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                shape: BoxShape.circle,
               ),
+              child: Icon(
+                Icons.weekend_outlined,
+                size: 48,
+                color: Colors.grey.shade400,
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Weekend',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'No classes scheduled',
+              style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
             ),
           ],
         ),
@@ -388,23 +477,31 @@ class _AttendenceViewState extends State<AttendenceView> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.event_note, size: 64, color: Colors.grey.shade400),
-            const SizedBox(height: 16),
-            Text(
-              'No classes scheduled',
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.event_note_outlined,
+                size: 48,
+                color: Colors.grey.shade400,
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'No Classes',
               style: TextStyle(
-                fontSize: 18,
-                color: Colors.grey.shade600,
-                fontWeight: FontWeight.w500,
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               'for ${DateFormat('MMMM d, yyyy').format(selectedDate)}',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade500,
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
             ),
           ],
         ),
@@ -412,155 +509,147 @@ class _AttendenceViewState extends State<AttendenceView> {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
       itemCount: attendanceList.length,
-      itemBuilder: (context, idx) {
-        return _buildPeriodCard(attendanceList[idx]);
-      },
+      itemBuilder: (context, idx) => _buildAttendanceStrip(attendanceList[idx]),
     );
   }
 
-  /// Build period card UI - similar to timetable but with attendance status
-  Widget _buildPeriodCard(PeriodAttendance period) {
+  Widget _buildAttendanceStrip(PeriodAttendance period) {
+    // Status styling
+    Color statusColor;
+    Color statusBgColor;
+    IconData statusIcon;
+
+    if (period.isFree) {
+      statusColor = Colors.grey.shade500;
+      statusBgColor = Colors.grey.shade300;
+      statusIcon = Icons.coffee_rounded;
+    } else {
+      switch (period.status) {
+        case 'present':
+          statusColor = const Color(0xFF2E7D32);
+          statusBgColor = const Color(0xFF4CAF50);
+          statusIcon = Icons.check_rounded;
+          break;
+        case 'late':
+          statusColor = const Color(0xFFE65100);
+          statusBgColor = const Color(0xFFFF9800);
+          statusIcon = Icons.access_time_rounded;
+          break;
+        case 'absent':
+          statusColor = const Color(0xFFC62828);
+          statusBgColor = const Color(0xFFEF5350);
+          statusIcon = Icons.close_rounded;
+          break;
+        case 'leave':
+          statusColor = const Color(0xFF1565C0);
+          statusBgColor = const Color(0xFF42A5F5);
+          statusIcon = Icons.event_busy_rounded;
+          break;
+        default:
+          statusColor = Colors.grey.shade600;
+          statusBgColor = Colors.grey.shade400;
+          statusIcon = Icons.hourglass_empty_rounded;
+      }
+    }
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withOpacity(0.04),
             blurRadius: 8,
-            offset: const Offset(0, 3),
+            offset: const Offset(0, 2),
           ),
         ],
-        // Left border color based on attendance status
-        border: Border(
-          left: BorderSide(
-            color: period.statusColor,
-            width: 4,
-          ),
-        ),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Row(
           children: [
-            // Period Row
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  "Period ${period.hour}",
-                  style: TextStyle(
-                    color: Colors.indigo.shade400,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    decoration: TextDecoration.underline,
-                    decorationColor: Colors.indigo.shade400,
-                    decorationThickness: 1.5,
-                  ),
-                ),
-                // Status Badge
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: period.statusColor.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: period.statusColor.withOpacity(0.5),
-                      width: 1,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        period.statusIcon,
-                        color: period.statusColor,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        period.statusText,
-                        style: TextStyle(
-                          color: period.statusColor,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 12),
-
-            if (period.isFree)
-              Row(
+            // Left status strip
+            Container(
+              width: 56,
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              decoration: BoxDecoration(
+                color: statusBgColor,
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(
-                    Icons.hourglass_empty,
-                    color: Colors.grey,
-                    size: 24,
-                  ),
-                  const SizedBox(width: 10),
                   Text(
-                    "Free Period",
-                    style: TextStyle(
-                      color: Colors.grey.shade700,
-                      fontSize: 17,
-                      fontWeight: FontWeight.w600,
+                    "${period.hour}",
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 18,
                     ),
                   ),
-                ],
-              )
-            else ...[
-              // Subject Row
-              Row(
-                children: [
-                  const Icon(Icons.book, color: Colors.indigo, size: 24),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      period.subjectName.toUpperCase(),
-                      style: TextStyle(
-                        color: Colors.indigo.shade700,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
+                  const SizedBox(height: 4),
+                  Icon(
+                    statusIcon,
+                    color: Colors.white,
+                    size: 18,
                   ),
                 ],
               ),
-
-              if (period.staffName.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                // Staff Row
-                Row(
+            ),
+            // Content
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
+                child: Row(
                   children: [
-                    const Icon(
-                      Icons.person_outline,
-                      color: Colors.black54,
-                      size: 22,
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      period.staffName,
-                      style: const TextStyle(
-                        color: Colors.black87,
-                        fontSize: 15,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            period.isFree ? "Free Period" : period.subjectName,
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: period.isFree
+                                  ? Colors.grey.shade500
+                                  : textDark,
+                            ),
+                          ),
+                          if (!period.isFree &&
+                              period.staffName.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              period.staffName,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: textMuted,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ],
                       ),
                     ),
+                    // Status text
+                    if (!period.isFree)
+                      Text(
+                        period.statusText,
+                        style: TextStyle(
+                          color: statusColor,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                        ),
+                      ),
                   ],
                 ),
-              ],
-            ],
+              ),
+            ),
           ],
         ),
       ),

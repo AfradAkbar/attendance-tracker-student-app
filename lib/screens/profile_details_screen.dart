@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:attendance_tracker_frontend/constants.dart';
+import 'package:attendance_tracker_frontend/notifiers/user_notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -15,6 +16,10 @@ class ProfileDetailsScreen extends StatefulWidget {
 }
 
 class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
+  // Soft color palette
+  static const Color primaryColor = Color(0xFF5B8A72); // Sage green
+  static const Color surfaceColor = Color(0xFFF8F6F4); // Warm off-white
+
   // controllers
   final TextEditingController fullName = TextEditingController();
   final TextEditingController phone = TextEditingController();
@@ -65,28 +70,59 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
       }
     }
     address.text = data["address"] ?? "";
-    // normalize gender to lowercase so it matches dropdown values
     final g = data["gender"];
-    gender = g == null
-        ? null
-        : g.toString().toLowerCase(); // male / female / null
+    gender = g == null ? null : g.toString().toLowerCase();
 
     setState(() {});
   }
 
-  Widget buildInput(String label, TextEditingController controller) {
+  Widget buildInput(
+    String label,
+    TextEditingController controller, {
+    bool readOnly = false,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 16)),
-        TextField(
-          controller: controller,
-          decoration: const InputDecoration(
-            isDense: true,
-            border: UnderlineInputBorder(),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: Colors.grey.shade600,
           ),
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 8),
+        TextField(
+          controller: controller,
+          readOnly: readOnly,
+          style: const TextStyle(
+            fontWeight: FontWeight.w500,
+            color: Colors.black87,
+          ),
+          decoration: InputDecoration(
+            isDense: true,
+            filled: true,
+            fillColor: Colors.grey.shade50,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey.shade200),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey.shade200),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.black54, width: 1.5),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
       ],
     );
   }
@@ -94,95 +130,211 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
-
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        iconTheme: const IconThemeData(color: Colors.white),
-        title: const Text(
-          "Edit Profile",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-      ),
-      body: Container(
-        padding: const EdgeInsets.only(top: 80),
-        child: Stack(
-          clipBehavior: Clip.none,
+      backgroundColor: surfaceColor,
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Header
             Container(
-              height: double.infinity,
-
-              padding: const EdgeInsets.fromLTRB(20, 70, 20, 20),
-              decoration: const BoxDecoration(
-                color: Colors.white,
+              padding: const EdgeInsets.fromLTRB(12, 16, 24, 16),
+              decoration: BoxDecoration(
+                color: primaryColor,
                 borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  topRight: Radius.circular(16),
+                  bottomLeft: Radius.circular(50),
+                  bottomRight: Radius.circular(50),
                 ),
               ),
+              child: Column(
+                // spacing: 50,
+                children: [
+                  Row(
+                    children: [
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(
+                          Icons.arrow_back_ios_rounded,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const Text(
+                        "Edit Profile",
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+
+                  Center(
+                    child: Container(
+                      height: 100,
+                      width: 100,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.grey.shade200,
+                        border: Border.all(
+                          color: Colors.grey.shade300,
+                          width: 3,
+                        ),
+                      ),
+                      child: ClipOval(
+                        child: image_url != null && image_url!.isNotEmpty
+                            ? Image.network(image_url!, fit: BoxFit.cover)
+                            : Icon(
+                                Icons.person_rounded,
+                                size: 48,
+                                color: Colors.grey.shade400,
+                              ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+              ),
+            ),
+
+            // Profile Image
+            const SizedBox(height: 32),
+
+            // Form
+            Expanded(
               child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     buildInput("Full Name", fullName),
                     buildInput("Phone Number", phone),
                     buildInput("Email", email),
-                    buildInput("Batch", batch),
-                    // Date of Birth picker
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "Date of Birth",
-                          style: TextStyle(fontSize: 16),
-                        ),
-                        TextField(
-                          controller: dob,
-                          readOnly: true,
-                          decoration: const InputDecoration(
-                            isDense: true,
-                            border: UnderlineInputBorder(),
-                            suffixIcon: Icon(Icons.calendar_today),
-                          ),
-                          onTap: () async {
-                            DateTime initialDate = DateTime(2000);
-                            if (dob.text.isNotEmpty) {
-                              try {
-                                initialDate = DateTime.parse(dob.text);
-                              } catch (_) {
-                                // ignore parse error and keep fallback
-                              }
-                            }
+                    // buildInput("Batch", batch, readOnly: true),
 
-                            final picked = await showDatePicker(
-                              context: context,
-                              initialDate: initialDate.isAfter(DateTime.now())
-                                  ? DateTime.now()
-                                  : initialDate,
-                              firstDate: DateTime(1900),
-                              lastDate: DateTime.now(),
-                            );
-
-                            if (picked != null) {
-                              // format as YYYY-MM-DD
-                              final formatted =
-                                  '${picked.year.toString().padLeft(4, '0')}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
-                              setState(() => dob.text = formatted);
-                            }
-                          },
-                        ),
-                        const SizedBox(height: 18),
-                      ],
+                    // Date of Birth
+                    Text(
+                      "Date of Birth",
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey.shade600,
+                      ),
                     ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: dob,
+                      readOnly: true,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black87,
+                      ),
+                      decoration: InputDecoration(
+                        isDense: true,
+                        filled: true,
+                        fillColor: Colors.grey.shade50,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade200),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade200),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                            color: Colors.black54,
+                            width: 1.5,
+                          ),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
+                        suffixIcon: Icon(
+                          Icons.calendar_today_outlined,
+                          size: 20,
+                          color: Colors.grey.shade500,
+                        ),
+                      ),
+                      onTap: () async {
+                        DateTime initialDate = DateTime(2000);
+                        if (dob.text.isNotEmpty) {
+                          try {
+                            initialDate = DateTime.parse(dob.text);
+                          } catch (_) {}
+                        }
+
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: initialDate.isAfter(DateTime.now())
+                              ? DateTime.now()
+                              : initialDate,
+                          firstDate: DateTime(1900),
+                          lastDate: DateTime.now(),
+                          builder: (context, child) {
+                            return Theme(
+                              data: Theme.of(context).copyWith(
+                                colorScheme: const ColorScheme.light(
+                                  primary: Colors.black87,
+                                ),
+                              ),
+                              child: child!,
+                            );
+                          },
+                        );
+
+                        if (picked != null) {
+                          final formatted =
+                              '${picked.year.toString().padLeft(4, '0')}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
+                          setState(() => dob.text = formatted);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 20),
+
                     buildInput("Address", address),
 
-                    const Text("Gender", style: TextStyle(fontSize: 16)),
-                    const SizedBox(height: 5),
-
+                    // Gender
+                    Text(
+                      "Gender",
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
                     DropdownButtonFormField<String>(
                       value: gender,
-                      decoration: const InputDecoration(
-                        border: UnderlineInputBorder(),
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: Colors.grey.shade50,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade200),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade200),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                            color: Colors.black54,
+                            width: 1.5,
+                          ),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
+                      ),
+                      icon: Icon(
+                        Icons.keyboard_arrow_down,
+                        color: Colors.grey.shade500,
                       ),
                       items: const [
                         DropdownMenuItem(value: "male", child: Text("Male")),
@@ -191,72 +343,36 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                           child: Text("Female"),
                         ),
                       ],
-                      onChanged: (value) {
-                        setState(() => gender = value);
-                      },
+                      onChanged: (value) => setState(() => gender = value),
                     ),
 
-                    const SizedBox(height: 28),
+                    const SizedBox(height: 40),
 
-                    Center(
-                      child: SizedBox(
-                        width: 180,
-                        height: 50,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            _onClick();
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.black,
-                            foregroundColor: Colors.white,
+                    // Save Button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: () => _onClick(),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primaryColor,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
                           ),
-                          child: const Text(
-                            "Save",
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
-                            ),
+                        ),
+                        child: const Text(
+                          "Save Changes",
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
                           ),
                         ),
                       ),
                     ),
+                    const SizedBox(height: 30),
                   ],
-                ),
-              ),
-            ),
-
-            // ------------ PROFILE IMAGE ----------
-            Positioned(
-              left: 0,
-              right: 0,
-              top: -40,
-              child: Center(
-                child: Container(
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                  ),
-                  padding: const EdgeInsets.all(8),
-                  child: Stack(
-                    children: [
-                      Container(
-                        height: 80,
-                        width: 80,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.black,
-                        ),
-                        child: ClipOval(
-                          child: image_url != null
-                              ? Image.network(
-                                  image_url!,
-                                  fit: BoxFit.cover,
-                                )
-                              : const Icon(Icons.person, size: 40),
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
               ),
             ),
@@ -303,10 +419,29 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
       print('[update profile] ${res.statusCode} ${res.body}');
 
       if (res.statusCode == 200) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Profile updated')));
-        Navigator.of(context).pop(true);
+        print("Update successful. Body: ${res.body}");
+        final parsed = jsonDecode(res.body) as Map<String, dynamic>;
+        if (parsed['user'] != null) {
+          print("Updating userNotifier with: ${parsed['user']}");
+          // Update the global user notifier with the new data
+          try {
+            userNotifier.value = UserModel.fromJson(parsed['user']);
+            print(
+              "userNotifier updated. New name: ${userNotifier.value?.name}",
+            );
+          } catch (e) {
+            print("Error updating userNotifier: $e");
+          }
+        } else {
+          print("Parsed user data is null");
+        }
+
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Profile updated')));
+          Navigator.of(context).pop(true);
+        }
       } else {
         String msg = 'Update failed';
         try {

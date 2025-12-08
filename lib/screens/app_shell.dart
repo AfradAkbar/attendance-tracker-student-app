@@ -94,29 +94,15 @@ class _AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          titles[_bottomNavIndex],
-          style: const TextStyle(color: Colors.black),
-        ),
-        backgroundColor: Colors.white,
-        leading: IconButton(
-          onPressed: () => showLogoutModal(context),
+      backgroundColor: const Color(0xFFF6F8FB),
 
-          icon: Icon(Icons.logout),
-        ),
-        elevation: 0,
-        centerTitle: true,
-      ),
-
-      // ❌ Removed FloatingActionButton and gap
       bottomNavigationBar: AnimatedBottomNavigationBar(
         icons: iconList,
         activeIndex: _bottomNavIndex,
         gapLocation: GapLocation.none, // No gap since no button
         notchSmoothness: NotchSmoothness.defaultEdge,
-        leftCornerRadius: 0,
-        rightCornerRadius: 0,
+        // leftCornerRadius: 50,
+        // rightCornerRadius: 50,
         activeColor: Colors.blueAccent,
         inactiveColor: Colors.grey,
         onTap: (index) => setState(() => _bottomNavIndex = index),
