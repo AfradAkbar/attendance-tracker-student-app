@@ -1,6 +1,8 @@
 const kBaseUrl = 'http://127.0.0.1:3000/api';
 
 const kStudentLoginRoute = '$kBaseUrl/student/login';
+const kForgotPasswordRoute = '$kBaseUrl/student/forgot-password';
+const kResetPasswordRoute = '$kBaseUrl/student/reset-password';
 
 const kBatchListUrl = '$kBaseUrl/student/batch';
 

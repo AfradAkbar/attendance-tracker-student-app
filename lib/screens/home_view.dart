@@ -78,6 +78,13 @@ class _HomeViewState extends State<HomeView> {
     return now.weekday <= 5 ? now.weekday : 1;
   }
 
+  // Check if today is a weekend
+  bool _isWeekend() {
+    final now = DateTime.now();
+    // Saturday = 6, Sunday = 7
+    return now.weekday == 6 || now.weekday == 7;
+  }
+
   // Get today's date in YYYY-MM-DD format
   String _getTodayDate() {
     final now = DateTime.now();
@@ -357,7 +364,9 @@ class _HomeViewState extends State<HomeView> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    "Here's your schedule for today",
+                    _isWeekend()
+                        ? "Enjoy your weekend!"
+                        : "Here's your schedule for today",
                     style: TextStyle(
                       fontSize: 13,
                       color: Colors.white.withOpacity(0.8),
@@ -373,38 +382,79 @@ class _HomeViewState extends State<HomeView> {
             padding: const EdgeInsets.all(20),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                Row(
-                  children: [
-                    Expanded(
-                      child: currentClass != null
-                          ? _buildCompactClassCard(
-                              label: "Now",
-                              classInfo: currentClass!,
-                              bgColor: const Color(0xFFE8F5E9),
-                              accentColor: primaryColor,
-                            )
-                          : _buildEmptyCard(
-                              "No class now",
-                              Icons.pause_circle_outlined,
-                            ),
+                // Only show current/next class cards on weekdays
+                if (!_isWeekend())
+                  Row(
+                    children: [
+                      Expanded(
+                        child: currentClass != null
+                            ? _buildCompactClassCard(
+                                label: "Now",
+                                classInfo: currentClass!,
+                                bgColor: const Color(0xFFE8F5E9),
+                                accentColor: primaryColor,
+                              )
+                            : _buildEmptyCard(
+                                "No class now",
+                                Icons.pause_circle_outlined,
+                              ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: nextClass != null
+                            ? _buildCompactClassCard(
+                                label: "Next",
+                                classInfo: nextClass!,
+                                bgColor: const Color(0xFFFFF3E0),
+                                accentColor: const Color(0xFFE65100),
+                              )
+                            : _buildEmptyCard(
+                                "Done for today",
+                                Icons.check_circle_outlined,
+                              ),
+                      ),
+                    ],
+                  ),
+                // Show weekend message
+                if (_isWeekend())
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: cardColor,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.grey.shade200),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: nextClass != null
-                          ? _buildCompactClassCard(
-                              label: "Next",
-                              classInfo: nextClass!,
-                              bgColor: const Color(0xFFFFF3E0),
-                              accentColor: const Color(0xFFE65100),
-                            )
-                          : _buildEmptyCard(
-                              "Done for today",
-                              Icons.check_circle_outlined,
+                    child: Center(
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.weekend_rounded,
+                            size: 48,
+                            color: primaryColor.withOpacity(0.7),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'It\'s the Weekend!',
+                            style: TextStyle(
+                              color: textDark,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
                             ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Relax and recharge for the week ahead',
+                            style: TextStyle(
+                              color: textMuted,
+                              fontSize: 14,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 20),
+                  ),
+                if (!_isWeekend()) const SizedBox(height: 20),
                 ValueListenableBuilder(
                   valueListenable: userNotifier,
                   builder: (context, user, _) {
@@ -428,11 +478,12 @@ class _HomeViewState extends State<HomeView> {
                     if (classIncharge == null && hod == null) {
                       return const SizedBox.shrink();
                     }
-
                     return Column(
                       spacing: 16,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        SizedBox(height: 20),
+
                         Row(
                           children: [
                             Container(
@@ -493,86 +544,88 @@ class _HomeViewState extends State<HomeView> {
                     );
                   },
                 ),
-                const SizedBox(height: 30),
+                if (!_isWeekend()) const SizedBox(height: 30),
 
-                // Today's Timetable Header
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: primaryColor.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(10),
+                // Today's Timetable Header (only on weekdays)
+                if (!_isWeekend())
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: primaryColor.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          Icons.schedule_rounded,
+                          color: primaryColor,
+                          size: 18,
+                        ),
                       ),
-                      child: Icon(
-                        Icons.schedule_rounded,
-                        color: primaryColor,
-                        size: 18,
+                      const SizedBox(width: 12),
+                      Text(
+                        "Today's Schedule",
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          color: textDark,
+                          letterSpacing: 1,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      "Today's Schedule",
-                      style: TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w700,
-                        color: textDark,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                // Timetable List
-                if (todaysTimetable.isEmpty)
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: cardColor,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.grey.shade200),
-                    ),
-                    child: Center(
-                      child: Column(
-                        children: [
-                          Icon(
-                            Icons.event_busy_rounded,
-                            size: 40,
-                            color: Colors.grey.shade300,
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            'No classes today',
-                            style: TextStyle(color: textMuted, fontSize: 15),
-                          ),
-                        ],
-                      ),
-                    ),
-                  )
-                else
-                  Container(
-                    decoration: BoxDecoration(
-                      color: cardColor,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.grey.shade200),
-                    ),
-                    child: ListView.separated(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: todaysTimetable.length,
-                      separatorBuilder: (_, __) =>
-                          Divider(height: 1, color: Colors.grey.shade100),
-                      itemBuilder: (context, index) {
-                        final item = todaysTimetable[index];
-                        final isCurrentClass =
-                            currentClass != null &&
-                            item['subject'] == currentClass!['subject'] &&
-                            item['time'] == currentClass!['time'];
-                        return _buildScheduleItem(item, isCurrentClass);
-                      },
-                    ),
+                    ],
                   ),
+                if (!_isWeekend()) const SizedBox(height: 16),
+
+                // Timetable List (only on weekdays)
+                if (!_isWeekend())
+                  if (todaysTimetable.isEmpty)
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: cardColor,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: Center(
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.event_busy_rounded,
+                              size: 40,
+                              color: Colors.grey.shade300,
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'No classes today',
+                              style: TextStyle(color: textMuted, fontSize: 15),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  else
+                    Container(
+                      decoration: BoxDecoration(
+                        color: cardColor,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: todaysTimetable.length,
+                        separatorBuilder: (_, __) =>
+                            Divider(height: 1, color: Colors.grey.shade100),
+                        itemBuilder: (context, index) {
+                          final item = todaysTimetable[index];
+                          final isCurrentClass =
+                              currentClass != null &&
+                              item['subject'] == currentClass!['subject'] &&
+                              item['time'] == currentClass!['time'];
+                          return _buildScheduleItem(item, isCurrentClass);
+                        },
+                      ),
+                    ),
                 const SizedBox(height: 32),
               ]),
             ),

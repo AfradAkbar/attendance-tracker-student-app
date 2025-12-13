@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:attendance_tracker_frontend/constants.dart';
 import 'package:attendance_tracker_frontend/screens/app_shell.dart';
+import 'package:attendance_tracker_frontend/screens/forgot_password_screen.dart';
 import 'package:attendance_tracker_frontend/screens/signup_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart';
@@ -108,7 +109,13 @@ class _LoginScreenState extends State<LoginScreen> {
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const ForgotPasswordScreen(),
+                          ),
+                        );
+                      },
                       child: const Text("Forgot Password?"),
                     ),
                   ),
