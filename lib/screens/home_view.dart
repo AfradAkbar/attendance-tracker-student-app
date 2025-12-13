@@ -483,7 +483,6 @@ class _HomeViewState extends State<HomeView> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         SizedBox(height: 20),
-
                         Row(
                           children: [
                             Container(
