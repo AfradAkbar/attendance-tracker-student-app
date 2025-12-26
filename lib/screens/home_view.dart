@@ -1,10 +1,7 @@
-import 'dart:convert';
-
+import 'package:attendance_tracker_frontend/api_service.dart';
 import 'package:attendance_tracker_frontend/constants.dart';
 import 'package:attendance_tracker_frontend/notifiers/user_notifier.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -122,134 +119,120 @@ class _HomeViewState extends State<HomeView> {
     });
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('jwt_token') ?? '';
-
       final dayOfWeek = _getDayOfWeek();
-      final today = _getTodayDate();
 
-      final url = Uri.parse('${kTimetableOfDay}/$dayOfWeek');
+      final data = await ApiService.get('${kTimetableOfDay}/$dayOfWeek');
 
-      final res = await http.get(
-        url,
-        headers: {
-          'content-type': 'application/json',
-          if (token.isNotEmpty) 'authorization': 'Bearer $token',
-        },
-      );
-
-      print('[_fetchTodaysTimetable] ${res.statusCode} => ${res.body}');
-
-      if (res.statusCode == 200) {
-        final data = jsonDecode(res.body);
-        final timetableList = data['timetable'] as List<dynamic>?;
-
-        if (timetableList == null || timetableList.isEmpty) {
-          setState(() {
-            todaysTimetable = [];
-            currentClass = null;
-            nextClass = null;
-            isLoading = false;
-          });
-          return;
-        }
-
-        // Sort by slot/hour
-        final sorted = List<Map<String, dynamic>>.from(
-          timetableList.map((item) => item as Map<String, dynamic>),
-        );
-        sorted.sort((a, b) => (a['hour'] ?? 0).compareTo(b['hour'] ?? 0));
-
-        // Format timetable with readable times
-        final formattedTimetable = sorted.map((item) {
-          final slot = item['hour'] ?? 0;
-          String subject = "-";
-          String staff = "";
-
-          if (item['subject_id'] is Map) {
-            subject =
-                (item['subject_id']['subject_name'] ??
-                        item['subject_id']['name'] ??
-                        item['subject_id']['code'] ??
-                        "-")
-                    .toString();
-          }
-
-          if (item['staff_id'] is Map) {
-            staff = (item['staff_id']['name'] ?? '').toString();
-          }
-
-          return {
-            'slot': slot,
-            'subject': subject,
-            'time': _getClassTime(slot),
-            'staff': staff,
-            'room': item['room'] ?? 'Classroom',
-          };
-        }).toList();
-
-        // Determine current and next class based on current time
-        final now = DateTime.now();
-        final currentHour = now.hour;
-        final currentMinute = now.minute;
-        final currentTimeMinutes = currentHour * 60 + currentMinute;
-
-        Map<String, dynamic>? current;
-        Map<String, dynamic>? next;
-
-        for (var i = 0; i < formattedTimetable.length; i++) {
-          final classTime = formattedTimetable[i]['time'] as String;
-          final times = classTime.split(' - ');
-          final startTime = times[0].trim();
-          final endTime = times[1].trim();
-
-          final startMinutes = _timeToMinutes(startTime);
-          final endMinutes = _timeToMinutes(endTime);
-
-          if (startMinutes <= currentTimeMinutes &&
-              currentTimeMinutes < endMinutes) {
-            // Current class is happening now
-            current = formattedTimetable[i];
-          }
-        }
-
-        // Find next class after current or first class if none is current
-        if (current != null) {
-          for (var i = 0; i < formattedTimetable.length; i++) {
-            if (formattedTimetable[i] == current &&
-                i + 1 < formattedTimetable.length) {
-              next = formattedTimetable[i + 1];
-              break;
-            }
-          }
-        } else {
-          // No class is currently happening, find next upcoming class
-          for (var i = 0; i < formattedTimetable.length; i++) {
-            final classTime = formattedTimetable[i]['time'] as String;
-            final times = classTime.split(' - ');
-            final startTime = times[0].trim();
-            final startMinutes = _timeToMinutes(startTime);
-
-            if (startMinutes > currentTimeMinutes) {
-              // This is the next upcoming class (current stays null)
-              next = formattedTimetable[i];
-              break;
-            }
-          }
-        }
-
-        setState(() {
-          todaysTimetable = formattedTimetable;
-          currentClass = current;
-          nextClass = next;
-          isLoading = false;
-        });
-      } else {
+      if (data == null) {
         setState(() {
           error = 'Failed to load timetable.';
           isLoading = false;
         });
+        return;
       }
+
+      final timetableList = data['timetable'] as List<dynamic>?;
+
+      if (timetableList == null || timetableList.isEmpty) {
+        setState(() {
+          todaysTimetable = [];
+          currentClass = null;
+          nextClass = null;
+          isLoading = false;
+        });
+        return;
+      }
+
+      // Sort by slot/hour
+      final sorted = List<Map<String, dynamic>>.from(
+        timetableList.map((item) => item as Map<String, dynamic>),
+      );
+      sorted.sort((a, b) => (a['hour'] ?? 0).compareTo(b['hour'] ?? 0));
+
+      // Format timetable with readable times
+      final formattedTimetable = sorted.map((item) {
+        final slot = item['hour'] ?? 0;
+        String subject = "-";
+        String staff = "";
+
+        if (item['subject_id'] is Map) {
+          subject =
+              (item['subject_id']['subject_name'] ??
+                      item['subject_id']['name'] ??
+                      item['subject_id']['code'] ??
+                      "-")
+                  .toString();
+        }
+
+        if (item['staff_id'] is Map) {
+          staff = (item['staff_id']['name'] ?? '').toString();
+        }
+
+        return {
+          'slot': slot,
+          'subject': subject,
+          'time': _getClassTime(slot),
+          'staff': staff,
+          'room': item['room'] ?? 'Classroom',
+        };
+      }).toList();
+
+      // Determine current and next class based on current time
+      final now = DateTime.now();
+      final currentHour = now.hour;
+      final currentMinute = now.minute;
+      final currentTimeMinutes = currentHour * 60 + currentMinute;
+
+      Map<String, dynamic>? current;
+      Map<String, dynamic>? next;
+
+      for (var i = 0; i < formattedTimetable.length; i++) {
+        final classTime = formattedTimetable[i]['time'] as String;
+        final times = classTime.split(' - ');
+        final startTime = times[0].trim();
+        final endTime = times[1].trim();
+
+        final startMinutes = _timeToMinutes(startTime);
+        final endMinutes = _timeToMinutes(endTime);
+
+        if (startMinutes <= currentTimeMinutes &&
+            currentTimeMinutes < endMinutes) {
+          // Current class is happening now
+          current = formattedTimetable[i];
+        }
+      }
+
+      // Find next class after current or first class if none is current
+      if (current != null) {
+        for (var i = 0; i < formattedTimetable.length; i++) {
+          if (formattedTimetable[i] == current &&
+              i + 1 < formattedTimetable.length) {
+            next = formattedTimetable[i + 1];
+            break;
+          }
+        }
+      } else {
+        // No class is currently happening, find next upcoming class
+        for (var i = 0; i < formattedTimetable.length; i++) {
+          final classTime = formattedTimetable[i]['time'] as String;
+          final times = classTime.split(' - ');
+          final startTime = times[0].trim();
+          final startMinutes = _timeToMinutes(startTime);
+
+          if (startMinutes > currentTimeMinutes) {
+            // This is the next upcoming class (current stays null)
+            next = formattedTimetable[i];
+            break;
+          }
+        }
+      }
+
+      setState(() {
+        todaysTimetable = formattedTimetable;
+        currentClass = current;
+        nextClass = next;
+        isLoading = false;
+      });
     } catch (e) {
       print('Error: $e');
       setState(() {

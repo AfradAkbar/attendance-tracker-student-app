@@ -1,10 +1,7 @@
-import 'dart:convert';
-
+import 'package:attendance_tracker_frontend/api_service.dart';
 import 'package:attendance_tracker_frontend/constants.dart';
 import 'package:attendance_tracker_frontend/notifiers/user_notifier.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfileDetailsScreen extends StatefulWidget {
   final Map<String, dynamic> userData; // <-- incoming data
@@ -382,10 +379,8 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
     );
   }
 
-  // LOGIN FUNCTION
+  // UPDATE PROFILE FUNCTION
   Future<void> _onClick() async {
-    final url = Uri.parse(kUpdateProfile);
-
     final name = fullName.text.trim();
     final emailVal = email.text.trim();
     final phoneVal = phone.text.trim();
@@ -403,52 +398,25 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
     };
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('jwt_token') ?? '';
+      final parsed = await ApiService.post(kUpdateProfile, bodyMap);
 
-      final res = await post(
-        url,
-        body: jsonEncode(bodyMap),
-        headers: {
-          'content-type': 'application/json',
-          if (token.isNotEmpty) 'authorization': 'Bearer $token',
-        },
-      );
-
-      // ignore: avoid_print
-      print('[update profile] ${res.statusCode} ${res.body}');
-
-      if (res.statusCode == 200) {
-        print("Update successful. Body: ${res.body}");
-        final parsed = jsonDecode(res.body) as Map<String, dynamic>;
-        if (parsed['user'] != null) {
-          print("Updating userNotifier with: ${parsed['user']}");
-          // Update the global user notifier with the new data
-          try {
-            userNotifier.value = UserModel.fromJson(parsed['user']);
-            print(
-              "userNotifier updated. New name: ${userNotifier.value?.name}",
-            );
-          } catch (e) {
-            print("Error updating userNotifier: $e");
-          }
-        } else {
-          print("Parsed user data is null");
+      if (parsed != null && parsed['user'] != null) {
+        print("Updating userNotifier with: ${parsed['user']}");
+        try {
+          userNotifier.value = UserModel.fromJson(parsed['user']);
+          print("userNotifier updated. New name: ${userNotifier.value?.name}");
+        } catch (e) {
+          print("Error updating userNotifier: $e");
         }
 
         if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('Profile updated')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Profile updated')),
+          );
           Navigator.of(context).pop(true);
         }
       } else {
-        String msg = 'Update failed';
-        try {
-          final parsed = jsonDecode(res.body) as Map<String, dynamic>;
-          if (parsed['message'] != null) msg = parsed['message'].toString();
-        } catch (_) {}
-        _showError(msg);
+        _showError('Update failed');
       }
     } catch (e) {
       _showError('Something went wrong. Please try again.');

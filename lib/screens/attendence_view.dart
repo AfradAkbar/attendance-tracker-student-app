@@ -1,10 +1,7 @@
-import 'dart:convert';
-
+import 'package:attendance_tracker_frontend/api_service.dart';
 import 'package:attendance_tracker_frontend/constants.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 /// Data model for a single period's attendance
 class PeriodAttendance {
@@ -111,92 +108,64 @@ class _AttendenceViewState extends State<AttendenceView> {
     });
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('jwt_token') ?? '';
+      // Format date as YYYY-MM-DD for API
+      final dateStr = DateFormat('yyyy-MM-dd').format(selectedDate);
 
-      if (token.isEmpty) {
+      // Make API call to get attendance for the selected date
+      final body = await ApiService.get(kMyAttendanceByDate(dateStr));
+
+      if (body == null) {
         setState(() {
-          error = 'Please login again.';
+          error = 'Failed to load attendance';
           isLoading = false;
         });
         return;
       }
 
-      // Format date as YYYY-MM-DD for API
-      final dateStr = DateFormat('yyyy-MM-dd').format(selectedDate);
+      final data = body['data'] as List<dynamic>? ?? [];
 
-      // Make API call to get attendance for the selected date
-      final res = await http.get(
-        Uri.parse(kMyAttendanceByDate(dateStr)),
-        headers: {
-          'content-type': 'application/json',
-          'authorization': 'Bearer $token',
-        },
-      );
-
-      if (res.statusCode == 200) {
-        final body = jsonDecode(res.body) as Map<String, dynamic>;
-        final data = body['data'] as List<dynamic>? ?? [];
-
-        // Parse attendance records
-        final List<PeriodAttendance> records = [];
-        for (final item in data) {
-          try {
-            final hour = (item['hour'] as num?)?.toInt() ?? 0;
-
-            // Get subject name
-            String subjectName = 'Unknown Subject';
-            if (item['subject'] is Map) {
-              subjectName =
-                  item['subject']['name']?.toString() ?? 'Unknown Subject';
-            }
-
-            // Get staff name
-            String staffName = '';
-            if (item['staff'] is Map) {
-              staffName = item['staff']['name']?.toString() ?? '';
-            }
-
-            // Get attendance status (null if not marked)
-            final status = item['attendance_status']?.toString();
-
-            records.add(
-              PeriodAttendance(
-                hour: hour,
-                subjectName: subjectName,
-                staffName: staffName,
-                status: status,
-              ),
-            );
-          } catch (_) {
-            // Skip malformed entries
-          }
-        }
-
-        // Sort by hour
-        records.sort((a, b) => a.hour.compareTo(b.hour));
-
-        setState(() {
-          attendanceList = records;
-          isLoading = false;
-        });
-      } else if (res.statusCode == 401) {
-        setState(() {
-          error = 'Session expired. Please login again.';
-          isLoading = false;
-        });
-      } else {
-        // Try to parse error message from response
-        String errorMsg = 'Failed to load attendance';
+      // Parse attendance records
+      final List<PeriodAttendance> records = [];
+      for (final item in data) {
         try {
-          final body = jsonDecode(res.body);
-          errorMsg = body['message'] ?? errorMsg;
-        } catch (_) {}
-        setState(() {
-          error = errorMsg;
-          isLoading = false;
-        });
+          final hour = (item['hour'] as num?)?.toInt() ?? 0;
+
+          // Get subject name
+          String subjectName = 'Unknown Subject';
+          if (item['subject'] is Map) {
+            subjectName =
+                item['subject']['name']?.toString() ?? 'Unknown Subject';
+          }
+
+          // Get staff name
+          String staffName = '';
+          if (item['staff'] is Map) {
+            staffName = item['staff']['name']?.toString() ?? '';
+          }
+
+          // Get attendance status (null if not marked)
+          final status = item['attendance_status']?.toString();
+
+          records.add(
+            PeriodAttendance(
+              hour: hour,
+              subjectName: subjectName,
+              staffName: staffName,
+              status: status,
+            ),
+          );
+        } catch (_) {
+          // Skip malformed entries
+        }
       }
+
+      // Sort by hour
+      records.sort((a, b) => a.hour.compareTo(b.hour));
+
+      setState(() {
+        attendanceList = records;
+        isLoading = false;
+      });
     } catch (e) {
       setState(() {
         error = 'Error loading attendance: $e';

@@ -1,8 +1,8 @@
+import 'package:attendance_tracker_frontend/api_service.dart';
 import 'package:attendance_tracker_frontend/screens/login_screen.dart';
 import 'package:attendance_tracker_frontend/screens/profile_details_screen.dart';
 import 'package:attendance_tracker_frontend/notifiers/user_notifier.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfileView extends StatefulWidget {
   const ProfileView({super.key});
@@ -357,8 +357,7 @@ void showLogoutModal(BuildContext context) {
                       ),
                     ),
                     onPressed: () async {
-                      final prefs = await SharedPreferences.getInstance();
-                      await prefs.clear();
+                      await ApiService.clearToken();
                       Navigator.of(context).pushAndRemoveUntil(
                         MaterialPageRoute(
                           builder: (context) => LoginScreen(),

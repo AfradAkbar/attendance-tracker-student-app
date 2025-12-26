@@ -1,16 +1,12 @@
-import 'dart:convert';
-
 import 'package:animated_bottom_navigation_bar/animated_bottom_navigation_bar.dart';
+import 'package:attendance_tracker_frontend/api_service.dart';
 import 'package:attendance_tracker_frontend/constants.dart';
 import 'package:attendance_tracker_frontend/notifiers/user_notifier.dart';
 import 'package:attendance_tracker_frontend/screens/attendence_view.dart';
-import 'package:attendance_tracker_frontend/screens/login_screen.dart';
 import 'package:attendance_tracker_frontend/screens/profile_view.dart';
 import 'package:attendance_tracker_frontend/screens/timetable_view.dart';
 import 'package:flutter/material.dart';
 import 'package:attendance_tracker_frontend/screens/home_view.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
@@ -63,24 +59,10 @@ class _AppShellState extends State<AppShell> {
   }
 
   Future<Map<String, dynamic>?> _getProfileData() async {
-    final url = Uri.parse(kMyDetails);
-
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('jwt_token') ?? '';
-
     try {
-      final res = await http.get(
-        url,
-        headers: {
-          'content-type': 'application/json',
-          if (token.isNotEmpty) 'authorization': 'Bearer $token',
-        },
-      );
+      final data = await ApiService.get(kMyDetails);
 
-      print('[_getProfileData] ${res.statusCode} => ${res.body}');
-
-      if (res.statusCode == 200) {
-        final data = jsonDecode(res.body) as Map<String, dynamic>;
+      if (data != null && data['user'] != null) {
         final user = data['user'] as Map<String, dynamic>;
         userNotifier.value = UserModel.fromJson(user);
         return data;
