@@ -5,19 +5,17 @@ import 'package:attendance_tracker_frontend/notifiers/user_notifier.dart';
 import 'package:attendance_tracker_frontend/notifiers/notifications_notifier.dart';
 import 'package:attendance_tracker_frontend/screens/attendence_view.dart';
 import 'package:attendance_tracker_frontend/screens/notifications_view.dart';
-import 'package:attendance_tracker_frontend/screens/profile_view.dart';
-import 'package:attendance_tracker_frontend/screens/timetable_view.dart';
+import 'package:attendance_tracker_frontend/screens/parent/parent_profile_view.dart';
 import 'package:flutter/material.dart';
-import 'package:attendance_tracker_frontend/screens/home_view.dart';
 
-class AppShell extends StatefulWidget {
-  const AppShell({super.key});
+class ParentAppShell extends StatefulWidget {
+  const ParentAppShell({super.key});
 
   @override
-  State<AppShell> createState() => _AppShellState();
+  State<ParentAppShell> createState() => _ParentAppShellState();
 }
 
-class _AppShellState extends State<AppShell> {
+class _ParentAppShellState extends State<ParentAppShell> {
   int _bottomNavIndex = 0;
 
   Map<String, dynamic>? userData;
@@ -25,8 +23,6 @@ class _AppShellState extends State<AppShell> {
 
   // Titles for each tab
   final titles = [
-    'Home',
-    'Timetable',
     'Attendance',
     'Notifications',
     'Profile',
@@ -34,17 +30,15 @@ class _AppShellState extends State<AppShell> {
 
   // Different page widgets
   final List<Widget> pages = [
-    const HomeView(),
-    const TimetableView(),
     const AttendenceView(),
     const NotificationsView(),
-    const ProfileView(),
+    const ParentProfileView(),
   ];
 
   @override
   void initState() {
     super.initState();
-    print("AppShell initState");
+    print("ParentAppShell initState");
     _loadProfile();
     _loadNotifications();
   }
@@ -86,7 +80,7 @@ class _AppShellState extends State<AppShell> {
         notificationsNotifier.setNotifications(notifications);
       }
     } catch (e) {
-      print('[AppShell] Error loading notifications: $e');
+      print('[ParentAppShell] Error loading notifications: $e');
     }
   }
 
@@ -99,8 +93,6 @@ class _AppShellState extends State<AppShell> {
         children: [
           AnimatedBottomNavigationBar(
             icons: const [
-              Icons.home,
-              Icons.schedule,
               Icons.calendar_month,
               Icons.notifications_outlined,
               Icons.person,
@@ -121,7 +113,7 @@ class _AppShellState extends State<AppShell> {
 
               return Positioned(
                 // Position over the notifications icon (4th icon, index 3)
-                left: MediaQuery.of(context).size.width / 5 * 3.5 - 4,
+                left: MediaQuery.of(context).size.width / 5 * 2.7 - 4,
                 top: 8,
                 child: Container(
                   padding: const EdgeInsets.all(4),

@@ -35,3 +35,10 @@ String kStudentAttendanceSummary(
   String? endDate,
 }) =>
     '$kBaseUrl/attendance/student/$studentId/summary${startDate != null && endDate != null ? '?start_date=$startDate&end_date=$endDate' : ''}';
+
+// Notification endpoints (unified - works for students and parents)
+const kNotifications = '$kBaseUrl/notification';
+
+//parent
+const kParentRequestOTP = '$kBaseUrl/parent/request-otp';
+const kParentVerifyOTP = '$kBaseUrl/parent/verify-otp';

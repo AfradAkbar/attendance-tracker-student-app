@@ -38,6 +38,7 @@ class ApiService {
   // GET request with auto token handling
   static Future<Map<String, dynamic>?> get(String url) async {
     final token = await getToken();
+    print("Token: $token");
 
     if (token == null || token.isEmpty) {
       await logout();
@@ -49,6 +50,8 @@ class ApiService {
         Uri.parse(url),
         headers: {'Authorization': 'Bearer $token'},
       );
+
+      print("Response: ${res.body}");
 
       // Token expired or invalid
       if (res.statusCode == 401) {
