@@ -17,9 +17,33 @@ class _HomeViewState extends State<HomeView> {
   bool isLoading = true;
   String? error;
 
+  // Period timings fetched from API
+  Map<int, String> periodTimings = {};
+
   @override
   void initState() {
     super.initState();
+    _fetchPeriodTimings();
+  }
+
+  // Fetch period timings from API
+  Future<void> _fetchPeriodTimings() async {
+    try {
+      final data = await ApiService.get(kPeriodTimings);
+      if (data != null && data['data'] != null) {
+        final timings = data['data'] as List<dynamic>;
+        for (var t in timings) {
+          final period = t['period'] as int? ?? 0;
+          final display = t['display'] as String? ?? '';
+          if (period > 0) {
+            periodTimings[period] = display;
+          }
+        }
+      }
+    } catch (e) {
+      print('Failed to fetch period timings: $e');
+    }
+    // Fetch timetable after period timings
     _fetchTodaysTimetable();
   }
 
@@ -88,17 +112,14 @@ class _HomeViewState extends State<HomeView> {
     return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
   }
 
-  // Calculate class time slots
-  // Schedule:
-  // Period 1: 9:30 AM - 10:30 AM
-  // Period 2: 10:30 AM - 11:30 AM
-  // Break: 11:30 AM - 11:40 AM (10 min)
-  // Period 3: 11:40 AM - 12:40 PM
-  // Break: 12:40 PM - 1:30 PM (50 min - lunch)
-  // Period 4: 1:30 PM - 2:30 PM
-  // Period 5: 2:30 PM - 3:30 PM
+  // Get class time from period timings (API or fallback to defaults)
   String _getClassTime(int slotNumber) {
-    final schedules = [
+    // Use API timings if available
+    if (periodTimings.containsKey(slotNumber)) {
+      return periodTimings[slotNumber]!;
+    }
+    // Fallback to default schedule
+    final defaults = [
       '9:30 AM - 10:30 AM', // Period 1
       '10:30 AM - 11:30 AM', // Period 2
       '11:40 AM - 12:40 PM', // Period 3
@@ -106,8 +127,8 @@ class _HomeViewState extends State<HomeView> {
       '2:30 PM - 3:30 PM', // Period 5
     ];
 
-    if (slotNumber >= 1 && slotNumber <= schedules.length) {
-      return schedules[slotNumber - 1];
+    if (slotNumber >= 1 && slotNumber <= defaults.length) {
+      return defaults[slotNumber - 1];
     }
     return '00:00 - 00:00';
   }

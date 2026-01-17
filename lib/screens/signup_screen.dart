@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:attendance_tracker_frontend/constants.dart';
 import 'package:attendance_tracker_frontend/models/batch/batch_list_response/batch.dart';
 import 'package:attendance_tracker_frontend/models/batch/batch_list_response/batch_list_response.dart';
+import 'package:attendance_tracker_frontend/screens/face_capture_screen.dart';
 import 'package:attendance_tracker_frontend/screens/login_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart';
@@ -19,32 +20,42 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
+  static const Color primaryColor = Color(0xFF5B8A72);
+
   bool passwordVisible = false;
+  bool _isSubmitting = false;
 
   List<Batch> _batches = [];
   // Form controllers
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _parentPhoneController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmController = TextEditingController();
   final TextEditingController _dobController = TextEditingController();
 
   DateTime? _selectedDob;
-  File? _selectedImage;
+
+  // Profile photo (from gallery) - for display purposes
+  File? _profileImage;
   final ImagePicker _picker = ImagePicker();
 
-  Future<void> _pickImage(ImageSource source) async {
+  // Face verification images (from camera) - for attendance matching
+  List<File> _faceImages = [];
+
+  /// Pick profile photo from gallery only
+  Future<void> _pickProfilePhoto() async {
     try {
       final pickedFile = await _picker.pickImage(
-        source: source,
+        source: ImageSource.gallery,
         maxWidth: 1024,
         maxHeight: 1024,
         imageQuality: 80,
       );
       if (pickedFile != null) {
         setState(() {
-          _selectedImage = File(pickedFile.path);
+          _profileImage = File(pickedFile.path);
         });
       }
     } catch (e) {
@@ -52,35 +63,18 @@ class _SignupScreenState extends State<SignupScreen> {
     }
   }
 
-  void _showImagePicker() {
-    showModalBottomSheet(
-      context: context,
-      builder: (BuildContext context) => SafeArea(
-        child: Wrap(
-          children: [
-            SizedBox(
-              height: 100,
-              child: ListTile(
-                leading: const Icon(Icons.photo_camera),
-                title: const Text('Camera'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickImage(ImageSource.camera);
-                },
-              ),
-            ),
-            // ListTile(
-            //   leading: const Icon(Icons.photo_library),
-            //   title: const Text('Gallery'),
-            //   onTap: () {
-            //     Navigator.pop(context);
-            //     _pickImage(ImageSource.gallery);
-            //   },
-            // ),
-          ],
-        ),
-      ),
+  /// Open face capture screen to take 3 face verification images
+  Future<void> _captureFaceImages() async {
+    final result = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(builder: (_) => const FaceCaptureScreen()),
     );
+
+    if (result != null) {
+      setState(() {
+        _faceImages = List<File>.from(result['images'] ?? []);
+      });
+    }
   }
 
   void _getBatchesFromApi() async {
@@ -125,6 +119,7 @@ class _SignupScreenState extends State<SignupScreen> {
     _nameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
+    _parentPhoneController.dispose();
     _passwordController.dispose();
     _confirmController.dispose();
     _dobController.dispose();
@@ -152,20 +147,41 @@ class _SignupScreenState extends State<SignupScreen> {
     final name = _nameController.text.trim();
     final email = _emailController.text.trim();
     final phone = _phoneController.text.trim();
+    final parentPhone = _parentPhoneController.text.trim();
     final password = _passwordController.text;
     final confirm = _confirmController.text;
     final batchId = selectedValue;
     final dob = _dobController.text;
 
+    // Validate all required fields
     if (name.isEmpty ||
         email.isEmpty ||
         phone.isEmpty ||
         password.isEmpty ||
-        batchId.isEmpty ||
-        _selectedImage == null) {
+        batchId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please fill all fields and select an image'),
+          content: Text('Please fill all required fields'),
+        ),
+      );
+      return;
+    }
+
+    // Validate profile image
+    if (_profileImage == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please upload a profile photo'),
+        ),
+      );
+      return;
+    }
+
+    // Validate face verification images
+    if (_faceImages.length != 3) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please capture all 3 face verification images'),
         ),
       );
       return;
@@ -178,27 +194,47 @@ class _SignupScreenState extends State<SignupScreen> {
       return;
     }
 
+    setState(() => _isSubmitting = true);
+
     final url = '$kBaseUrl/student/signup';
 
     try {
-      // Prepare JSON body including base64 image so backend can use req.body.image
+      // Prepare JSON body
       final Map<String, dynamic> body = {
         'name': name,
         'email': email,
         'phone_number': phone,
+        'parent_phone': parentPhone,
         'batch': batchId,
         'password': password,
       };
       if (dob.isNotEmpty) body['dob'] = dob;
 
+      // Convert profile image to base64
       try {
-        final bytes = await _selectedImage!.readAsBytes();
+        final bytes = await _profileImage!.readAsBytes();
         final b64 = base64Encode(bytes);
         final dataUri = 'data:image/jpeg;base64,$b64';
-        body['image'] = dataUri; // backend will read this from req.body.image
+        body['profile_image'] = dataUri;
       } catch (e) {
-        log('Failed to read image bytes for base64: $e');
+        log('Failed to read profile image bytes: $e');
       }
+
+      // Convert face verification images to base64
+      final faceImagesB64 = <String>[];
+      for (final img in _faceImages) {
+        try {
+          final bytes = await img.readAsBytes();
+          final b64 = base64Encode(bytes);
+          faceImagesB64.add('data:image/jpeg;base64,$b64');
+        } catch (e) {
+          log('Failed to read face image bytes: $e');
+        }
+      }
+      body['face_verification_images'] = faceImagesB64;
+
+      // Note: Face descriptors are generated on the camera app side when verifying
+      // The images uploaded here are downloaded by the camera app for registration
 
       // Send JSON request
       final response = await post(
@@ -222,15 +258,23 @@ class _SignupScreenState extends State<SignupScreen> {
           final parsed = jsonDecode(response.body) as Map<String, dynamic>;
           if (parsed['message'] != null) msg = parsed['message'].toString();
         } catch (_) {}
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(msg)));
+
+        // Show error dialog for duplicate errors
+        if (response.statusCode == 409) {
+          _showErrorDialog('Registration Error', msg);
+        } else {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(msg)));
+        }
       }
     } catch (e) {
       log('Signup error: $e');
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Network error')));
+    } finally {
+      setState(() => _isSubmitting = false);
     }
   }
 
@@ -293,6 +337,21 @@ class _SignupScreenState extends State<SignupScreen> {
                     decoration: InputDecoration(
                       prefixIcon: Icon(Icons.phone, size: 18.0),
                       hintText: 'Enter your Phone number',
+                    ),
+                  ),
+                  SizedBox(height: 30),
+
+                  Text(
+                    "Parent's Phone",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  TextField(
+                    controller: _parentPhoneController,
+                    keyboardType: TextInputType.phone,
+                    style: TextStyle(height: 2.5),
+                    decoration: InputDecoration(
+                      prefixIcon: Icon(Icons.family_restroom, size: 18.0),
+                      hintText: "Enter parent's phone number",
                     ),
                   ),
                   SizedBox(height: 30),
@@ -395,25 +454,30 @@ class _SignupScreenState extends State<SignupScreen> {
 
                   const SizedBox(height: 30),
 
-                  Text(
-                    "Upload Photo",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  // ============ PROFILE PHOTO SECTION ============
+                  _buildSectionHeader(
+                    title: "Profile Photo",
+                    subtitle: "This will be displayed on your profile",
+                    icon: Icons.photo_library,
                   ),
                   const SizedBox(height: 10),
                   Center(
                     child: Column(
                       children: [
-                        if (_selectedImage != null)
+                        if (_profileImage != null)
                           Container(
                             width: 120,
                             height: 120,
                             decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey),
-                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: primaryColor, width: 2),
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            child: Image.file(
-                              _selectedImage!,
-                              fit: BoxFit.cover,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: Image.file(
+                                _profileImage!,
+                                fit: BoxFit.cover,
+                              ),
                             ),
                           )
                         else
@@ -422,38 +486,176 @@ class _SignupScreenState extends State<SignupScreen> {
                             height: 120,
                             decoration: BoxDecoration(
                               border: Border.all(color: Colors.grey),
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(12),
                               color: Colors.grey.shade200,
                             ),
                             child: Icon(
-                              Icons.camera_alt,
+                              Icons.person,
                               size: 50,
                               color: Colors.grey,
                             ),
                           ),
                         const SizedBox(height: 12),
                         ElevatedButton.icon(
-                          onPressed: _showImagePicker,
-                          icon: const Icon(Icons.camera_alt),
-                          label: const Text('Pick Photo'),
+                          onPressed: _pickProfilePhoto,
+                          icon: const Icon(Icons.photo_library),
+                          label: Text(
+                            _profileImage == null
+                                ? 'Upload from Gallery'
+                                : 'Change Photo',
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue.shade100,
+                            foregroundColor: Colors.blue.shade900,
+                          ),
                         ),
                       ],
                     ),
                   ),
 
                   const SizedBox(height: 30),
-                  SizedBox(height: 30),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _submit,
-                      child: Text('Submit'),
+
+                  // ============ FACE VERIFICATION SECTION ============
+                  _buildSectionHeader(
+                    title: "Face Verification",
+                    subtitle: "Capture 3 photos for attendance verification",
+                    icon: Icons.face,
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Show captured face images or placeholder
+                  Center(
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            for (int i = 0; i < 3; i++)
+                              Container(
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                ),
+                                width: 80,
+                                height: 80,
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: i < _faceImages.length
+                                        ? primaryColor
+                                        : Colors.grey,
+                                    width: 2,
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                  color: i < _faceImages.length
+                                      ? null
+                                      : Colors.grey.shade200,
+                                ),
+                                child: i < _faceImages.length
+                                    ? ClipRRect(
+                                        borderRadius: BorderRadius.circular(10),
+                                        child: Image.file(
+                                          _faceImages[i],
+                                          fit: BoxFit.cover,
+                                        ),
+                                      )
+                                    : Center(
+                                        child: Column(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Icon(
+                                              Icons.camera_alt,
+                                              color: Colors.grey,
+                                            ),
+                                            Text(
+                                              '${i + 1}',
+                                              style: TextStyle(
+                                                color: Colors.grey,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        ElevatedButton.icon(
+                          onPressed: _captureFaceImages,
+                          icon: const Icon(Icons.camera_alt),
+                          label: Text(
+                            _faceImages.isEmpty
+                                ? 'Capture Face Images'
+                                : 'Retake Face Images',
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: primaryColor.withOpacity(0.2),
+                            foregroundColor: primaryColor,
+                          ),
+                        ),
+                        if (_faceImages.length == 3)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.check_circle,
+                                  color: Colors.green,
+                                  size: 16,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'All 3 images captured',
+                                  style: TextStyle(
+                                    color: Colors.green,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
                     ),
                   ),
 
+                  const SizedBox(height: 40),
+
+                  // Submit button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: _isSubmitting ? null : _submit,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryColor,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: _isSubmitting
+                          ? const SizedBox(
+                              height: 24,
+                              width: 24,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Text(
+                              'Submit',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    spacing: 8,
                     children: [
                       Text('Already have an account?'),
                       TextButton(
@@ -473,6 +675,77 @@ class _SignupScreenState extends State<SignupScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: primaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: primaryColor),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showErrorDialog(String title, String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.error_outline, color: Colors.red),
+            const SizedBox(width: 8),
+            Text(title),
+          ],
+        ),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+        ],
       ),
     );
   }
