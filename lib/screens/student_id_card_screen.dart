@@ -62,7 +62,7 @@ class StudentIdCardScreen extends StatelessWidget {
 
   Widget _buildPortraitIdCard() {
     return Container(
-      width: 320,
+      width: double.infinity,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),

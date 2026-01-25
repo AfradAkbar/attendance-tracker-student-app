@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'package:attendance_tracker_frontend/constants.dart';
+import 'package:attendance_tracker_frontend/notifiers/user_notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -36,6 +38,18 @@ class ApiService {
   }
 
   // GET request with auto token handling
+  static Future<void> loadProfile() async {
+    try {
+      final data = await get(kMyDetails);
+      if (data != null && data['user'] != null) {
+        final user = data['user'] as Map<String, dynamic>;
+        userNotifier.value = UserModel.fromJson(user);
+      }
+    } catch (e) {
+      print("[ApiService] Error loading profile: $e");
+    }
+  }
+
   static Future<Map<String, dynamic>?> get(String url) async {
     final token = await getToken();
     print("Token: $token");

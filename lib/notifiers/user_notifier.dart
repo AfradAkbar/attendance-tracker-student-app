@@ -37,7 +37,7 @@ class UserModel {
       email: json['email'] ?? '',
       phoneNumber: json['phone_number']?.toString() ?? '',
       dob: json['dob'],
-      imageUrl: json['image_url'],
+      imageUrl: json['profile_image_url'] ?? json['image_url'],
       status: json['status'],
       address: json['address'],
       gender: json['gender'],

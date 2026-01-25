@@ -1,9 +1,9 @@
 import 'package:attendance_tracker_frontend/api_service.dart';
-import 'package:attendance_tracker_frontend/screens/login_screen.dart';
-import 'package:attendance_tracker_frontend/screens/profile_details_screen.dart';
-import 'package:attendance_tracker_frontend/screens/student_id_card_screen.dart';
 import 'package:attendance_tracker_frontend/notifiers/user_notifier.dart';
+import 'package:attendance_tracker_frontend/screens/login_screen.dart';
+import 'package:attendance_tracker_frontend/screens/student_id_card_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfileView extends StatefulWidget {
   const ProfileView({super.key});
@@ -69,24 +69,7 @@ class _ProfileViewState extends State<ProfileView> {
                             ),
                             Row(
                               children: [
-                                // Edit button
-                                IconButton(
-                                  onPressed: () async {
-                                    await Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            ProfileDetailsScreen(
-                                              userData: userData.toJson(),
-                                            ),
-                                      ),
-                                    );
-                                  },
-                                  icon: const Icon(
-                                    Icons.edit_outlined,
-                                    color: Colors.white,
-                                  ),
-                                ),
+                                // Edit button removed as per request
                                 // Logout button
                                 IconButton(
                                   onPressed: () => showLogoutModal(context),
@@ -211,6 +194,13 @@ class _ProfileViewState extends State<ProfileView> {
                           ),
                           child: Column(
                             children: [
+                              if (userData.gender != null &&
+                                  userData.gender!.isNotEmpty)
+                                _infoRow(
+                                  Icons.person_outline,
+                                  "Gender",
+                                  userData.gender!,
+                                ),
                               if (userData.phoneNumber.isNotEmpty)
                                 _infoRow(
                                   Icons.phone_outlined,
@@ -250,6 +240,12 @@ class _ProfileViewState extends State<ProfileView> {
                           ),
                           child: Column(
                             children: [
+                              if (course?['department_id']?['name'] != null)
+                                _infoRow(
+                                  Icons.account_balance_outlined,
+                                  "Department",
+                                  course!['department_id']['name'],
+                                ),
                               if (course?['name'] != null)
                                 _infoRow(
                                   Icons.school_outlined,

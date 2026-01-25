@@ -263,6 +263,13 @@ class _HomeViewState extends State<HomeView> {
     }
   }
 
+  Future<void> _onRefresh() async {
+    await Future.wait([
+      ApiService.loadProfile(),
+      _fetchPeriodTimings(),
+    ]);
+  }
+
   // Soft pastel color palette
   static const Color primaryColor = Color(0xFF5B8A72); // Sage green
   static const Color accentColor = Color(0xFFE8B4A0); // Soft peach
@@ -316,278 +323,115 @@ class _HomeViewState extends State<HomeView> {
 
     return Scaffold(
       backgroundColor: surfaceColor,
-      body: CustomScrollView(
-        slivers: [
-          // Soft Header
-          SliverToBoxAdapter(
-            child: Container(
-              decoration: BoxDecoration(
-                color: primaryColor,
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(28),
-                  bottomRight: Radius.circular(28),
+      body: RefreshIndicator(
+        onRefresh: _onRefresh,
+        color: primaryColor,
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            // Soft Header
+            SliverToBoxAdapter(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: primaryColor,
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(28),
+                    bottomRight: Radius.circular(28),
+                  ),
                 ),
-              ),
-              padding: EdgeInsets.fromLTRB(
-                24,
-                MediaQuery.of(context).padding.top + 24,
-                24,
-                28,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Greeting
-                  ValueListenableBuilder(
-                    valueListenable: userNotifier,
-                    builder: (context, user, child) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Good ${_getGreeting()},",
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.white.withOpacity(0.85),
-                              letterSpacing: 1,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            user?.name ?? "Student",
-                            style: const TextStyle(
-                              fontSize: 26,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                              letterSpacing: 1,
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    _isWeekend()
-                        ? "Enjoy your weekend!"
-                        : "Here's your schedule for today",
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.white.withOpacity(0.8),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // Content
-          SliverPadding(
-            padding: const EdgeInsets.all(20),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate([
-                // Only show current/next class cards on weekdays
-                if (!_isWeekend())
-                  Row(
-                    children: [
-                      Expanded(
-                        child: currentClass != null
-                            ? _buildCompactClassCard(
-                                label: "Now",
-                                classInfo: currentClass!,
-                                bgColor: const Color(0xFFE8F5E9),
-                                accentColor: primaryColor,
-                              )
-                            : _buildEmptyCard(
-                                "No class now",
-                                Icons.pause_circle_outlined,
-                              ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: nextClass != null
-                            ? _buildCompactClassCard(
-                                label: "Next",
-                                classInfo: nextClass!,
-                                bgColor: const Color(0xFFFFF3E0),
-                                accentColor: const Color(0xFFE65100),
-                              )
-                            : _buildEmptyCard(
-                                "Done for today",
-                                Icons.check_circle_outlined,
-                              ),
-                      ),
-                    ],
-                  ),
-                // Show weekend message
-                if (_isWeekend())
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: cardColor,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.grey.shade200),
-                    ),
-                    child: Center(
-                      child: Column(
-                        children: [
-                          Icon(
-                            Icons.weekend_rounded,
-                            size: 48,
-                            color: primaryColor.withOpacity(0.7),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'It\'s the Weekend!',
-                            style: TextStyle(
-                              color: textDark,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Relax and recharge for the week ahead',
-                            style: TextStyle(
-                              color: textMuted,
-                              fontSize: 14,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                if (!_isWeekend()) const SizedBox(height: 20),
-                ValueListenableBuilder(
-                  valueListenable: userNotifier,
-                  builder: (context, user, _) {
-                    final batch = user?.batchId;
-                    if (batch == null) return const SizedBox.shrink();
-
-                    // Access fields based on backend population
-                    final classIncharge =
-                        batch['class_incharge_id'] ?? batch['class_incharge'];
-
-                    // Course might be in 'course' (virtual) or 'course_id' (explicit populate)
-                    final course = batch['course_id'] ?? batch['course'];
-
-                    // Department might be in 'department_id'
-                    final department =
-                        course?['department_id'] ?? course?['department'];
-
-                    // HOD might be in 'hod_id'
-                    final hod = department?['hod_id'] ?? department?['hod'];
-
-                    if (classIncharge == null && hod == null) {
-                      return const SizedBox.shrink();
-                    }
-                    return Column(
-                      spacing: 16,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(height: 20),
-                        Row(
+                padding: EdgeInsets.fromLTRB(
+                  24,
+                  MediaQuery.of(context).padding.top + 24,
+                  24,
+                  28,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Greeting
+                    ValueListenableBuilder(
+                      valueListenable: userNotifier,
+                      builder: (context, user, child) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: primaryColor.withOpacity(0.12),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Icon(
-                                Icons.person,
-                                color: primaryColor,
-                                size: 18,
+                            Text(
+                              "Good ${_getGreeting()},",
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.white.withOpacity(0.85),
+                                letterSpacing: 1,
                               ),
                             ),
-                            const SizedBox(width: 12),
+                            const SizedBox(height: 4),
                             Text(
-                              "Faculty",
-                              style: TextStyle(
-                                fontSize: 17,
+                              user?.name ?? "Student",
+                              style: const TextStyle(
+                                fontSize: 26,
                                 fontWeight: FontWeight.w700,
-                                color: textDark,
+                                color: Colors.white,
                                 letterSpacing: 1,
                               ),
                             ),
                           ],
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      _isWeekend()
+                          ? "Enjoy your weekend!"
+                          : "Here's your schedule for today",
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.white.withOpacity(0.8),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Content
+            SliverPadding(
+              padding: const EdgeInsets.all(20),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  // Only show current/next class cards on weekdays
+                  if (!_isWeekend())
+                    Row(
+                      children: [
+                        Expanded(
+                          child: currentClass != null
+                              ? _buildCompactClassCard(
+                                  label: "Now",
+                                  classInfo: currentClass!,
+                                  bgColor: const Color(0xFFE8F5E9),
+                                  accentColor: primaryColor,
+                                )
+                              : _buildEmptyCard(
+                                  "No class now",
+                                  Icons.pause_circle_outlined,
+                                ),
                         ),
-                        Row(
-                          children: [
-                            if (classIncharge != null)
-                              Expanded(
-                                child: _buildFacultyItem(
-                                  "Class Incharge",
-                                  classIncharge is Map
-                                      ? classIncharge['name'] ?? ''
-                                      : classIncharge.toString(),
-                                  Icons.person_rounded,
-                                  const Color(0xFFE8F5E9),
-                                  const Color(0xFF2E7D32),
-                                  photoUrl: classIncharge is Map
-                                      ? classIncharge['profile_image_url']
-                                      : null,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: nextClass != null
+                              ? _buildCompactClassCard(
+                                  label: "Next",
+                                  classInfo: nextClass!,
+                                  bgColor: const Color(0xFFFFF3E0),
+                                  accentColor: const Color(0xFFE65100),
+                                )
+                              : _buildEmptyCard(
+                                  "Done for today",
+                                  Icons.check_circle_outlined,
                                 ),
-                              ),
-                            if (classIncharge != null && hod != null)
-                              const SizedBox(width: 16),
-                            if (hod != null)
-                              Expanded(
-                                child: _buildFacultyItem(
-                                  "HOD",
-                                  hod is Map
-                                      ? hod['name'] ?? ''
-                                      : hod.toString(),
-                                  Icons.admin_panel_settings_rounded,
-                                  const Color(0xFFE3F2FD),
-                                  const Color(0xFF1565C0),
-                                  photoUrl: hod is Map
-                                      ? hod['profile_image_url']
-                                      : null,
-                                ),
-                              ),
-                          ],
                         ),
                       ],
-                    );
-                  },
-                ),
-                if (!_isWeekend()) const SizedBox(height: 30),
-
-                // Today's Timetable Header (only on weekdays)
-                if (!_isWeekend())
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: primaryColor.withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(
-                          Icons.schedule_rounded,
-                          color: primaryColor,
-                          size: 18,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        "Today's Schedule",
-                        style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700,
-                          color: textDark,
-                          letterSpacing: 1,
-                        ),
-                      ),
-                    ],
-                  ),
-                if (!_isWeekend()) const SizedBox(height: 16),
-
-                // Timetable List (only on weekdays)
-                if (!_isWeekend())
-                  if (todaysTimetable.isEmpty)
+                    ),
+                  // Show weekend message
+                  if (_isWeekend())
                     Container(
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
@@ -599,47 +443,222 @@ class _HomeViewState extends State<HomeView> {
                         child: Column(
                           children: [
                             Icon(
-                              Icons.event_busy_rounded,
-                              size: 40,
-                              color: Colors.grey.shade300,
+                              Icons.weekend_rounded,
+                              size: 48,
+                              color: primaryColor.withOpacity(0.7),
                             ),
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 16),
                             Text(
-                              'No classes today',
-                              style: TextStyle(color: textMuted, fontSize: 15),
+                              'It\'s the Weekend!',
+                              style: TextStyle(
+                                color: textDark,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Relax and recharge for the week ahead',
+                              style: TextStyle(
+                                color: textMuted,
+                                fontSize: 14,
+                              ),
+                              textAlign: TextAlign.center,
                             ),
                           ],
                         ),
                       ),
-                    )
-                  else
-                    Container(
-                      decoration: BoxDecoration(
-                        color: cardColor,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.grey.shade200),
-                      ),
-                      child: ListView.separated(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: todaysTimetable.length,
-                        separatorBuilder: (_, __) =>
-                            Divider(height: 1, color: Colors.grey.shade100),
-                        itemBuilder: (context, index) {
-                          final item = todaysTimetable[index];
-                          final isCurrentClass =
-                              currentClass != null &&
-                              item['subject'] == currentClass!['subject'] &&
-                              item['time'] == currentClass!['time'];
-                          return _buildScheduleItem(item, isCurrentClass);
-                        },
-                      ),
                     ),
-                const SizedBox(height: 32),
-              ]),
+                  if (!_isWeekend()) const SizedBox(height: 20),
+                  ValueListenableBuilder(
+                    valueListenable: userNotifier,
+                    builder: (context, user, _) {
+                      final batch = user?.batchId;
+                      if (batch == null) return const SizedBox.shrink();
+
+                      // Access fields based on backend population
+                      final classIncharge =
+                          batch['class_incharge_id'] ?? batch['class_incharge'];
+
+                      // Course might be in 'course' (virtual) or 'course_id' (explicit populate)
+                      final course = batch['course_id'] ?? batch['course'];
+
+                      // Department might be in 'department_id'
+                      final department =
+                          course?['department_id'] ?? course?['department'];
+
+                      // HOD might be in 'hod_id'
+                      final hod = department?['hod_id'] ?? department?['hod'];
+
+                      if (classIncharge == null && hod == null) {
+                        return const SizedBox.shrink();
+                      }
+                      return Column(
+                        // spacing: 16, // This property is not valid for Column directly.
+                        // If it's meant for children spacing, use SizedBox between children.
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 20), // Added for spacing
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: primaryColor.withOpacity(0.12),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Icon(
+                                  Icons.person,
+                                  color: primaryColor,
+                                  size: 18,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                "Faculty",
+                                style: TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w700,
+                                  color: textDark,
+                                  letterSpacing: 1,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(
+                            height: 16,
+                          ), // Spacing between header and items
+                          Row(
+                            children: [
+                              if (classIncharge != null)
+                                Expanded(
+                                  child: _buildFacultyItem(
+                                    "Class Incharge",
+                                    classIncharge is Map
+                                        ? classIncharge['name'] ?? ''
+                                        : classIncharge.toString(),
+                                    Icons.person_rounded,
+                                    const Color(0xFFE8F5E9),
+                                    const Color(0xFF2E7D32),
+                                    photoUrl: classIncharge is Map
+                                        ? classIncharge['profile_image_url']
+                                        : null,
+                                  ),
+                                ),
+                              if (classIncharge != null && hod != null)
+                                const SizedBox(width: 16),
+                              if (hod != null)
+                                Expanded(
+                                  child: _buildFacultyItem(
+                                    "HOD",
+                                    hod is Map
+                                        ? hod['name'] ?? ''
+                                        : hod.toString(),
+                                    Icons.admin_panel_settings_rounded,
+                                    const Color(0xFFE3F2FD),
+                                    const Color(0xFF1565C0),
+                                    photoUrl: hod is Map
+                                        ? hod['profile_image_url']
+                                        : null,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                  if (!_isWeekend()) const SizedBox(height: 30),
+
+                  // Today's Timetable Header (only on weekdays)
+                  if (!_isWeekend())
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: primaryColor.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(
+                            Icons.schedule_rounded,
+                            color: primaryColor,
+                            size: 18,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          "Today's Schedule",
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                            color: textDark,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                      ],
+                    ),
+                  if (!_isWeekend()) const SizedBox(height: 16),
+
+                  // Timetable List (only on weekdays)
+                  if (!_isWeekend())
+                    if (todaysTimetable.isEmpty)
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: cardColor,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: Center(
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.event_busy_rounded,
+                                size: 40,
+                                color: Colors.grey.shade300,
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                'No classes today',
+                                style: TextStyle(
+                                  color: textMuted,
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    else
+                      Container(
+                        decoration: BoxDecoration(
+                          color: cardColor,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: todaysTimetable.length,
+                          separatorBuilder: (_, __) =>
+                              Divider(height: 1, color: Colors.grey.shade100),
+                          itemBuilder: (context, index) {
+                            final item = todaysTimetable[index];
+                            final isCurrentClass =
+                                currentClass != null &&
+                                item['subject'] == currentClass!['subject'] &&
+                                item['time'] == currentClass!['time'];
+                            return _buildScheduleItem(item, isCurrentClass);
+                          },
+                        ),
+                      ),
+                  const SizedBox(height: 32),
+                ]),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

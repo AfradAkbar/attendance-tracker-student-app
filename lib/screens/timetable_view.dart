@@ -86,7 +86,7 @@ class _TimetableViewState extends State<TimetableView>
         final data = jsonDecode(res.body)['timetable'] as List<dynamic>?;
 
         if (data == null || data.isEmpty) {
-          error = 'No timetable available.';
+          error = 'No time table available at the moment.';
           isLoading = false;
           setState(() {});
           return;
@@ -130,6 +130,10 @@ class _TimetableViewState extends State<TimetableView>
           );
         }
 
+        isLoading = false;
+        setState(() {});
+      } else if (res.statusCode == 404) {
+        error = 'No time table available at the moment.';
         isLoading = false;
         setState(() {});
       } else {
