@@ -205,10 +205,10 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    buildInput("Full Name", fullName),
+                    buildInput("Full Name", fullName, readOnly: true),
                     buildInput("Phone Number", phone),
-                    buildInput("Email", email),
-                    // buildInput("Batch", batch, readOnly: true),
+                    buildInput("Email", email, readOnly: true),
+                    buildInput("Batch", batch, readOnly: true),
 
                     // Date of Birth
                     Text(
@@ -381,16 +381,12 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
 
   // UPDATE PROFILE FUNCTION
   Future<void> _onClick() async {
-    final name = fullName.text.trim();
-    final emailVal = email.text.trim();
     final phoneVal = phone.text.trim();
     final dobVal = dob.text.trim();
     final addressVal = address.text.trim();
     final genderVal = gender;
 
     final bodyMap = <String, dynamic>{
-      'name': name,
-      'email': emailVal,
       'dob': dobVal,
       'phone_number': phoneVal,
       'gender': genderVal,

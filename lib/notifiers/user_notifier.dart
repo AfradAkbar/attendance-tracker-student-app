@@ -10,6 +10,7 @@ class UserModel {
   final String? status;
   final String? address;
   final String? gender;
+  final String? registerNumber;
   final Map<String, dynamic>? batchId;
   final List<dynamic>? faceDescriptors;
 
@@ -23,6 +24,7 @@ class UserModel {
     this.status,
     this.address,
     this.gender,
+    this.registerNumber,
     this.batchId,
     this.faceDescriptors,
   });
@@ -39,6 +41,7 @@ class UserModel {
       status: json['status'],
       address: json['address'],
       gender: json['gender'],
+      registerNumber: json['register_number'],
       batchId: json['batch_id'],
       faceDescriptors: json['faceDescriptors'],
     );
@@ -56,6 +59,7 @@ class UserModel {
       'status': status,
       'address': address,
       'gender': gender,
+      'register_number': registerNumber,
       'batch_id': batchId,
       'faceDescriptors': faceDescriptors,
     };

@@ -1,6 +1,7 @@
 import 'package:attendance_tracker_frontend/api_service.dart';
 import 'package:attendance_tracker_frontend/screens/login_screen.dart';
 import 'package:attendance_tracker_frontend/screens/profile_details_screen.dart';
+import 'package:attendance_tracker_frontend/screens/student_id_card_screen.dart';
 import 'package:attendance_tracker_frontend/notifiers/user_notifier.dart';
 import 'package:flutter/material.dart';
 
@@ -31,7 +32,7 @@ class _ProfileViewState extends State<ProfileView> {
         }
 
         final batch = userData.batchId;
-        final course = batch?['course'];
+        final course = batch?['course_id'];
 
         return Scaffold(
           backgroundColor: surfaceColor,
@@ -154,6 +155,45 @@ class _ProfileViewState extends State<ProfileView> {
                   ),
 
                   const SizedBox(height: 32),
+
+                  // Student ID Card Option
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _sectionTitle("Quick Access"),
+                        const SizedBox(height: 16),
+                        _buildMenuOption(
+                          icon: Icons.badge_outlined,
+                          title: "Student ID Card",
+                          subtitle: "View your digital ID card",
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => StudentIdCardScreen(
+                                  imageUrl: userData.imageUrl,
+                                  name: userData.name,
+                                  registerNumber: userData.registerNumber,
+                                  batchName: batch?['name'],
+                                  courseName: course?['name'],
+                                  departmentName:
+                                      course?['department_id']?['name'],
+                                  startYear: batch?['start_year']?.toString(),
+                                  endYear: batch?['end_year']?.toString(),
+                                  phoneNumber: userData.phoneNumber,
+                                  address: userData.address,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
 
                   // Personal Information Section
                   Padding(
@@ -290,6 +330,77 @@ class _ProfileViewState extends State<ProfileView> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildMenuOption({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.shade100),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: primaryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                icon,
+                size: 24,
+                color: primaryColor,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: Colors.grey.shade400,
+            ),
+          ],
+        ),
       ),
     );
   }

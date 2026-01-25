@@ -525,6 +525,9 @@ class _HomeViewState extends State<HomeView> {
                                   Icons.person_rounded,
                                   const Color(0xFFE8F5E9),
                                   const Color(0xFF2E7D32),
+                                  photoUrl: classIncharge is Map
+                                      ? classIncharge['profile_image_url']
+                                      : null,
                                 ),
                               ),
                             if (classIncharge != null && hod != null)
@@ -539,6 +542,9 @@ class _HomeViewState extends State<HomeView> {
                                   Icons.admin_panel_settings_rounded,
                                   const Color(0xFFE3F2FD),
                                   const Color(0xFF1565C0),
+                                  photoUrl: hod is Map
+                                      ? hod['profile_image_url']
+                                      : null,
                                 ),
                               ),
                           ],
@@ -821,23 +827,40 @@ class _HomeViewState extends State<HomeView> {
     String name,
     IconData icon,
     Color bgColor,
-    Color accentColor,
-  ) {
+    Color accentColor, {
+    String? photoUrl,
+  }) {
     return Container(
-      // padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
               color: bgColor,
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              icon,
-              size: 18,
-              color: accentColor,
+            child: ClipOval(
+              child: photoUrl != null && photoUrl.isNotEmpty
+                  ? Image.network(
+                      photoUrl,
+                      fit: BoxFit.cover,
+                      width: 40,
+                      height: 40,
+                      errorBuilder: (context, error, stackTrace) => Icon(
+                        icon,
+                        size: 18,
+                        color: accentColor,
+                      ),
+                    )
+                  : Center(
+                      child: Icon(
+                        icon,
+                        size: 18,
+                        color: accentColor,
+                      ),
+                    ),
             ),
           ),
           const SizedBox(width: 12),
