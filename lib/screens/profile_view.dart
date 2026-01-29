@@ -257,6 +257,12 @@ class _ProfileViewState extends State<ProfileView> {
                                   Icons.class_outlined,
                                   "Batch",
                                   batch!['name'],
+                                ),
+                              if (batch?['current_semester'] != null)
+                                _infoRow(
+                                  Icons.calendar_view_day_outlined,
+                                  "Current Semester",
+                                  "Semester ${batch!['current_semester']}",
                                   isLast: true,
                                 ),
                             ],

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:animated_bottom_navigation_bar/animated_bottom_navigation_bar.dart';
 import 'package:attendance_tracker_frontend/api_service.dart';
 import 'package:attendance_tracker_frontend/constants.dart';
@@ -19,9 +20,13 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   int _bottomNavIndex = 0;
+  Timer? _notificationPollingTimer;
 
   Map<String, dynamic>? userData;
   bool isLoading = true;
+
+  // Polling interval in seconds
+  static const int _pollingIntervalSeconds = 5;
 
   // Titles for each tab
   final titles = [
@@ -47,6 +52,20 @@ class _AppShellState extends State<AppShell> {
     print("AppShell initState");
     _loadProfile();
     _loadNotifications();
+    _startNotificationPolling();
+  }
+
+  @override
+  void dispose() {
+    _notificationPollingTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startNotificationPolling() {
+    _notificationPollingTimer = Timer.periodic(
+      const Duration(seconds: _pollingIntervalSeconds),
+      (timer) => _loadNotifications(),
+    );
   }
 
   Future<void> _loadProfile() async {
