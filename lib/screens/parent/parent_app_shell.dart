@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:animated_bottom_navigation_bar/animated_bottom_navigation_bar.dart';
 import 'package:attendance_tracker_frontend/api_service.dart';
 import 'package:attendance_tracker_frontend/constants.dart';
@@ -17,9 +18,13 @@ class ParentAppShell extends StatefulWidget {
 
 class _ParentAppShellState extends State<ParentAppShell> {
   int _bottomNavIndex = 0;
+  Timer? _notificationPollingTimer;
 
   Map<String, dynamic>? userData;
   bool isLoading = true;
+
+  // Polling interval in seconds
+  static const int _pollingIntervalSeconds = 5;
 
   // Titles for each tab
   final titles = [
@@ -41,6 +46,20 @@ class _ParentAppShellState extends State<ParentAppShell> {
     print("ParentAppShell initState");
     _loadProfile();
     _loadNotifications();
+    _startNotificationPolling();
+  }
+
+  @override
+  void dispose() {
+    _notificationPollingTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startNotificationPolling() {
+    _notificationPollingTimer = Timer.periodic(
+      const Duration(seconds: _pollingIntervalSeconds),
+      (timer) => _loadNotifications(),
+    );
   }
 
   Future<void> _loadProfile() async {
@@ -111,9 +130,14 @@ class _ParentAppShellState extends State<ParentAppShell> {
               final unreadCount = notifications.where((n) => !n.isRead).length;
               if (unreadCount == 0) return const SizedBox.shrink();
 
+              // Calculate position for middle icon (index 1 of 3)
+              // Center is at width * 0.5
+              // Shift slightly right (+8) and up (top: 8)
+              final notificationIconPosition =
+                  MediaQuery.of(context).size.width * 0.5 + 6;
+
               return Positioned(
-                // Position over the notifications icon (4th icon, index 3)
-                left: MediaQuery.of(context).size.width / 5 * 2.7 - 4,
+                left: notificationIconPosition,
                 top: 8,
                 child: Container(
                   padding: const EdgeInsets.all(4),
