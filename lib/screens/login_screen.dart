@@ -32,6 +32,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool isParentLogin = false;
   bool _isLoading = false;
   bool _otpSent = false;
+  bool _passwordVisible = false;
 
   @override
   void dispose() {
@@ -151,7 +152,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     TextFormField(
                       controller: _passwordController,
-                      obscureText: true,
+                      obscureText: !_passwordVisible,
                       style: const TextStyle(height: 2.5),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
@@ -162,9 +163,21 @@ class _LoginScreenState extends State<LoginScreen> {
                         }
                         return null;
                       },
-                      decoration: const InputDecoration(
-                        prefixIcon: Icon(Icons.key_rounded, size: 19),
+                      decoration: InputDecoration(
+                        prefixIcon: const Icon(Icons.key_rounded, size: 19),
                         hintText: 'Enter your Password',
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _passwordVisible
+                                ? Icons.visibility
+                                : Icons.visibility_off,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _passwordVisible = !_passwordVisible;
+                            });
+                          },
+                        ),
                       ),
                     ),
                   ] else ...[

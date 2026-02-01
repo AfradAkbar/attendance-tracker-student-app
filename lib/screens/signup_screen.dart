@@ -34,6 +34,7 @@ class _SignupScreenState extends State<SignupScreen> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmController = TextEditingController();
   final TextEditingController _dobController = TextEditingController();
+  final TextEditingController _addressController = TextEditingController();
 
   DateTime? _selectedDob;
   String? _selectedGender;
@@ -124,6 +125,7 @@ class _SignupScreenState extends State<SignupScreen> {
     _passwordController.dispose();
     _confirmController.dispose();
     _dobController.dispose();
+    _addressController.dispose();
     super.dispose();
   }
 
@@ -211,6 +213,9 @@ class _SignupScreenState extends State<SignupScreen> {
       };
       if (dob.isNotEmpty) body['dob'] = dob;
       if (_selectedGender != null) body['gender'] = _selectedGender;
+      if (_addressController.text.trim().isNotEmpty) {
+        body['address'] = _addressController.text.trim();
+      }
 
       // Convert profile image to base64
       try {
@@ -354,6 +359,21 @@ class _SignupScreenState extends State<SignupScreen> {
                     decoration: InputDecoration(
                       prefixIcon: Icon(Icons.family_restroom, size: 18.0),
                       hintText: "Enter parent's phone number",
+                    ),
+                  ),
+                  SizedBox(height: 30),
+
+                  Text(
+                    "Address",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  TextField(
+                    controller: _addressController,
+                    maxLines: 2,
+                    style: TextStyle(height: 1.5),
+                    decoration: InputDecoration(
+                      prefixIcon: Icon(Icons.home_outlined, size: 18.0),
+                      hintText: "Enter your address",
                     ),
                   ),
                   SizedBox(height: 30),
