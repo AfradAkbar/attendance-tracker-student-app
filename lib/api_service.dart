@@ -50,6 +50,25 @@ class ApiService {
     }
   }
 
+  // Track consecutive connection errors
+  static int _connectionErrorCount = 0;
+  static const int _maxConnectionErrors = 5;
+
+  // Reset error count on successful request
+  static void _resetErrorCount() {
+    _connectionErrorCount = 0;
+  }
+
+  // Handle connection error - logout after too many failures
+  static Future<void> _handleConnectionError() async {
+    _connectionErrorCount++;
+    if (_connectionErrorCount >= _maxConnectionErrors) {
+      print('[ApiService] Too many connection errors, logging out...');
+      _connectionErrorCount = 0;
+      await logout();
+    }
+  }
+
   static Future<Map<String, dynamic>?> get(String url) async {
     final token = await getToken();
     print("Token: $token");
@@ -60,10 +79,12 @@ class ApiService {
     }
 
     try {
-      final res = await http.get(
-        Uri.parse(url),
-        headers: {'Authorization': 'Bearer $token'},
-      );
+      final res = await http
+          .get(
+            Uri.parse(url),
+            headers: {'Authorization': 'Bearer $token'},
+          )
+          .timeout(const Duration(seconds: 10));
 
       print("Response: ${res.body}");
 
@@ -74,10 +95,12 @@ class ApiService {
       }
 
       if (res.statusCode == 200) {
+        _resetErrorCount(); // Success - reset error count
         return jsonDecode(res.body);
       }
     } catch (e) {
       print('API Error: $e');
+      await _handleConnectionError();
     }
     return null;
   }
@@ -95,14 +118,16 @@ class ApiService {
     }
 
     try {
-      final res = await http.post(
-        Uri.parse(url),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode(body),
-      );
+      final res = await http
+          .post(
+            Uri.parse(url),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode(body),
+          )
+          .timeout(const Duration(seconds: 10));
 
       // Token expired or invalid
       if (res.statusCode == 401) {
@@ -111,10 +136,12 @@ class ApiService {
       }
 
       if (res.statusCode == 200 || res.statusCode == 201) {
+        _resetErrorCount();
         return jsonDecode(res.body);
       }
     } catch (e) {
       print('API Error: $e');
+      await _handleConnectionError();
     }
     return null;
   }
@@ -132,14 +159,16 @@ class ApiService {
     }
 
     try {
-      final res = await http.put(
-        Uri.parse(url),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-        body: body != null ? jsonEncode(body) : null,
-      );
+      final res = await http
+          .put(
+            Uri.parse(url),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+            body: body != null ? jsonEncode(body) : null,
+          )
+          .timeout(const Duration(seconds: 10));
 
       // Token expired or invalid
       if (res.statusCode == 401) {
@@ -148,10 +177,12 @@ class ApiService {
       }
 
       if (res.statusCode == 200) {
+        _resetErrorCount();
         return jsonDecode(res.body);
       }
     } catch (e) {
       print('API Error: $e');
+      await _handleConnectionError();
     }
     return null;
   }
