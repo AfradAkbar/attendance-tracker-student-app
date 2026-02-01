@@ -36,6 +36,7 @@ class _SignupScreenState extends State<SignupScreen> {
   final TextEditingController _dobController = TextEditingController();
 
   DateTime? _selectedDob;
+  String? _selectedGender;
 
   // Profile photo (from gallery) - for display purposes
   File? _profileImage;
@@ -209,6 +210,7 @@ class _SignupScreenState extends State<SignupScreen> {
         'password': password,
       };
       if (dob.isNotEmpty) body['dob'] = dob;
+      if (_selectedGender != null) body['gender'] = _selectedGender;
 
       // Convert profile image to base64
       try {
@@ -368,6 +370,36 @@ class _SignupScreenState extends State<SignupScreen> {
                       prefixIcon: Icon(Icons.cake, size: 18.0),
                       hintText: 'Select Date of Birth',
                     ),
+                  ),
+                  const SizedBox(height: 30),
+
+                  Text(
+                    "Gender",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  DropdownMenu<String>(
+                    width: double.infinity,
+                    inputDecorationTheme: const InputDecorationTheme(
+                      border: UnderlineInputBorder(),
+                      enabledBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: Colors.grey),
+                      ),
+                      focusedBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: Colors.blue),
+                      ),
+                      contentPadding: EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    hintText: "Select Gender",
+                    leadingIcon: Icon(Icons.person_outline, size: 18),
+                    dropdownMenuEntries: const [
+                      DropdownMenuEntry(value: 'male', label: 'Male'),
+                      DropdownMenuEntry(value: 'female', label: 'Female'),
+                    ],
+                    onSelected: (value) {
+                      setState(() {
+                        _selectedGender = value;
+                      });
+                    },
                   ),
                   const SizedBox(height: 30),
 
