@@ -1,4 +1,4 @@
-const kBaseUrl = 'http://192.168.1.4:3000/api';
+const kBaseUrl = 'http://192.168.1.2:3000/api';
 
 const kStudentLoginRoute = '$kBaseUrl/student/login';
 const kForgotPasswordRoute = '$kBaseUrl/student/forgot-password';
@@ -25,6 +25,9 @@ String kMyAttendanceByDate(String date) =>
 // Get my attendance summary
 String kMyAttendanceSummary({String? startDate, String? endDate}) =>
     '$kBaseUrl/attendance/my-attendance/summary${startDate != null && endDate != null ? '?start_date=$startDate&end_date=$endDate' : ''}';
+
+// Get my overall semester-wise attendance
+const kMyOverallAttendance = '$kBaseUrl/attendance/my-attendance/overall';
 
 // Legacy endpoints (for admin/staff use - requires student_id)
 // Get attendance for a specific date: /student/{student_id}/date/{date}

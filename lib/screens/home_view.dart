@@ -20,10 +20,37 @@ class _HomeViewState extends State<HomeView> {
   // Period timings fetched from API
   Map<int, String> periodTimings = {};
 
+  // Overall attendance data
+  List<Map<String, dynamic>> semesterAttendance = [];
+  Map<String, dynamic>? overallAttendance;
+  bool isAttendanceLoading = true;
+
   @override
   void initState() {
     super.initState();
     _fetchPeriodTimings();
+    _fetchOverallAttendance();
+  }
+
+  Future<void> _fetchOverallAttendance() async {
+    try {
+      final data = await ApiService.get(kMyOverallAttendance);
+      if (data != null && data['success'] == true && data['data'] != null) {
+        final result = data['data'] as Map<String, dynamic>;
+        setState(() {
+          semesterAttendance = List<Map<String, dynamic>>.from(
+            result['semesters'] ?? [],
+          );
+          overallAttendance = result['overall'] as Map<String, dynamic>?;
+          isAttendanceLoading = false;
+        });
+      } else {
+        setState(() => isAttendanceLoading = false);
+      }
+    } catch (e) {
+      print('Failed to fetch overall attendance: $e');
+      setState(() => isAttendanceLoading = false);
+    }
   }
 
   // Fetch period timings from API
@@ -267,6 +294,7 @@ class _HomeViewState extends State<HomeView> {
     await Future.wait([
       ApiService.loadProfile(),
       _fetchPeriodTimings(),
+      _fetchOverallAttendance(),
     ]);
   }
 
@@ -389,6 +417,14 @@ class _HomeViewState extends State<HomeView> {
                     ),
                   ],
                 ),
+              ),
+            ),
+
+            // Overall Attendance Section
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+              sliver: SliverToBoxAdapter(
+                child: _buildOverallAttendanceSection(),
               ),
             ),
 
@@ -661,6 +697,211 @@ class _HomeViewState extends State<HomeView> {
         ),
       ),
     );
+  }
+
+  Widget _buildOverallAttendanceSection() {
+    if (isAttendanceLoading) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: cardColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.shade200),
+        ),
+        child: Center(
+          child: SizedBox(
+            height: 24,
+            width: 24,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: primaryColor,
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (semesterAttendance.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final overallPct = overallAttendance?['attendance_percentage'] ?? 0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: primaryColor.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                Icons.bar_chart_rounded,
+                color: primaryColor,
+                size: 18,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              "Overall Attendance",
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: textDark,
+                letterSpacing: 1,
+              ),
+            ),
+            const Spacer(),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: _getAttendanceColor(overallPct).withOpacity(0.12),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                "$overallPct%",
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: _getAttendanceColor(overallPct),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Container(
+          decoration: BoxDecoration(
+            color: cardColor,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+          child: Column(
+            children: [
+              // Overall progress bar
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: overallPct / 100.0,
+                          backgroundColor: Colors.grey.shade200,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            _getAttendanceColor(overallPct),
+                          ),
+                          minHeight: 6,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      "${overallAttendance?['total_classes'] ?? 0} classes",
+                      style: TextStyle(fontSize: 12, color: textMuted),
+                    ),
+                  ],
+                ),
+              ),
+              Divider(height: 1, color: Colors.grey.shade100),
+              // Semester-wise breakdown
+              ...semesterAttendance.map(
+                (sem) => _buildSemesterRow(sem),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSemesterRow(Map<String, dynamic> sem) {
+    final semester = sem['semester'] ?? 0;
+    final pct = sem['attendance_percentage'] ?? 0;
+    final total = sem['total_classes'] ?? 0;
+    final present = (sem['present'] ?? 0) + (sem['late'] ?? 0);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Row(
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: _getAttendanceColor(pct).withOpacity(0.12),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Center(
+              child: Text(
+                "S$semester",
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: _getAttendanceColor(pct),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Semester $semester",
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: textDark,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(3),
+                  child: LinearProgressIndicator(
+                    value: pct / 100.0,
+                    backgroundColor: Colors.grey.shade200,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      _getAttendanceColor(pct),
+                    ),
+                    minHeight: 4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                "$pct%",
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: _getAttendanceColor(pct),
+                ),
+              ),
+              Text(
+                "$present/$total",
+                style: TextStyle(fontSize: 11, color: textMuted),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getAttendanceColor(int percentage) {
+    if (percentage >= 75) return const Color(0xFF2E7D32); // Green
+    if (percentage >= 50) return const Color(0xFFE65100); // Orange
+    return const Color(0xFFC62828); // Red
   }
 
   String _getGreeting() {
